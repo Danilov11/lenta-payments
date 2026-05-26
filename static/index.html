@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Лента — Мои выплаты</title>
+  <style>
+    :root {
+      --green:  #1a7a3c; --green-l: #e8f5ed; --green-d: #145f2e;
+      --gray-0: #f5f6f8; --gray-1: #e9ebed; --gray-2: #b0b7bf;
+      --gray-3: #6b7480; --text: #1a1d23; --white: #ffffff;
+      --red: #d63b3b; --radius: 12px; --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--gray-0); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--green); color: #fff; padding: 0 20px;
+      height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .logo { font-size: 20px; font-weight: 700; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .user-name { font-size: 13px; opacity: .85; }
+
+    /* ── Language switcher ── */
+    .lang-switcher { display: flex; gap: 4px; }
+    .lang-btn {
+      border: 1.5px solid rgba(255,255,255,.35);
+      background: transparent; color: #fff;
+      padding: 4px 9px; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all .15s; line-height: 1.4;
+    }
+    .lang-btn:hover   { background: rgba(255,255,255,.15); }
+    .lang-btn.active  { background: rgba(255,255,255,.25); border-color: #fff; }
+
+    #btn-logout {
+      background: rgba(255,255,255,.15); border: none; color: #fff;
+      padding: 6px 13px; border-radius: 20px; cursor: pointer;
+      font-size: 13px; transition: background .2s;
+    }
+    #btn-logout:hover { background: rgba(255,255,255,.25); }
+
+    /* ── Layout ── */
+    main { padding: 24px 16px; max-width: 760px; margin: 0 auto; }
+
+    /* ── Auth ── */
+    #screen-auth {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+    }
+    .auth-box {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 36px 32px;
+      width: 100%; max-width: 380px;
+    }
+    .auth-logo { font-size: 28px; font-weight: 800; color: var(--green); margin-bottom: 6px; }
+    .auth-sub  { font-size: 14px; color: var(--gray-3); margin-bottom: 28px; }
+
+    /* ── Lang switcher on auth ── */
+    .auth-lang { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+    .auth-lang .lang-btn {
+      border-color: var(--gray-1); color: var(--gray-3);
+    }
+    .auth-lang .lang-btn:hover  { background: var(--gray-0); }
+    .auth-lang .lang-btn.active {
+      background: var(--green-l); border-color: var(--green); color: var(--green);
+    }
+
+    label { font-size: 13px; font-weight: 600; color: var(--gray-3);
+            display: block; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--gray-1);
+      border-radius: 8px; font-size: 16px; outline: none; transition: border-color .2s;
+    }
+    input:focus { border-color: var(--green); }
+    .input-group { margin-bottom: 16px; }
+    .btn {
+      width: 100%; padding: 13px; border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover    { background: var(--green-d); }
+    .btn-primary:disabled { opacity: .5; cursor: default; }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .7px; color: var(--gray-3); margin-bottom: 16px;
+    }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab {
+      padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      cursor: pointer; border: none; background: var(--gray-1); color: var(--gray-3);
+      transition: all .15s;
+    }
+    .tab.active { background: var(--green); color: #fff; }
+
+    /* ── Profile grid ── */
+    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .profile-item label { font-size: 12px; color: var(--gray-2); margin-bottom: 3px; }
+    .profile-item .val  { font-size: 15px; font-weight: 500; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
+             font-size: 12px; font-weight: 600; }
+    .badge-green { background: var(--green-l); color: var(--green); }
+    .badge-gray  { background: var(--gray-1);  color: var(--gray-3); }
+
+    /* ── Summary stats ── */
+    .summary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+    @media(min-width:480px){ .summary-grid { grid-template-columns: repeat(4,1fr); } }
+    .stat-box { background: var(--gray-0); border-radius: 10px; padding: 14px 16px; text-align: center; }
+    .stat-val   { font-size: 22px; font-weight: 700; color: var(--green); }
+    .stat-label { font-size: 11px; color: var(--gray-3); margin-top: 4px; }
+
+    /* ── Filter row ── */
+    .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-row input[type="date"],
+    .filter-row input[type="month"] { width: auto; padding: 8px 12px; font-size: 14px; }
+    .filter-row .btn { width: auto; padding: 9px 20px; font-size: 14px; }
+
+    /* ── Table ── */
+    .shifts-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      background: var(--gray-0); color: var(--gray-3); font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      padding: 10px 12px; text-align: left; white-space: nowrap;
+    }
+    td { padding: 11px 12px; border-bottom: 1px solid var(--gray-1); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--gray-0); }
+    .amt { font-weight: 600; color: var(--green); }
+    .no-data { text-align: center; padding: 32px; color: var(--gray-2); font-size: 14px; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 22px; height: 22px; border: 3px solid var(--gray-1);
+      border-top-color: var(--green); border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 28px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ AUTH ═══ -->
+<div id="screen-auth">
+  <div class="auth-box">
+    <div class="auth-logo">Лента</div>
+    <p class="auth-sub" data-i18n="auth_sub"></p>
+
+    <!-- Выбор языка на экране входа -->
+    <div class="auth-lang">
+      <button class="lang-btn" data-lang="ru">🇷🇺 РУС</button>
+      <button class="lang-btn" data-lang="tg">🇹🇯 ТОҶ</button>
+      <button class="lang-btn" data-lang="uz">🇺🇿 ЎЗБ</button>
+      <button class="lang-btn" data-lang="ky">🇰🇬 КЫР</button>
+    </div>
+
+    <div class="input-group">
+      <label data-i18n="phone_label"></label>
+      <input id="inp-phone" type="tel" data-i18n-ph="phone_placeholder"/>
+    </div>
+    <button class="btn btn-primary" id="btn-login" data-i18n="btn_login"></button>
+    <div class="error-msg" id="err-login"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="screen-app" class="hidden">
+  <header>
+    <div class="logo">Лента</div>
+    <div class="header-right">
+      <!-- Языки в шапке -->
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="ru">РУС</button>
+        <button class="lang-btn" data-lang="tg">ТОҶ</button>
+        <button class="lang-btn" data-lang="uz">ЎЗБ</button>
+        <button class="lang-btn" data-lang="ky">КЫР</button>
+      </div>
+      <span class="user-name" id="header-name"></span>
+      <button id="btn-logout" data-i18n="btn_logout"></button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab active" data-tab="profile" data-i18n="tab_profile"></button>
+      <button class="tab" data-tab="shifts"  data-i18n="tab_shifts"></button>
+      <button class="tab" data-tab="summary" data-i18n="tab_summary"></button>
+    </div>
+
+    <!-- ─ Профиль ─ -->
+    <div id="tab-profile">
+      <div class="card">
+        <div class="card-title" data-i18n="profile_title"></div>
+        <div class="profile-grid" id="profile-grid"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- ─ Смены ─ -->
+    <div id="tab-shifts" class="hidden">
+      <div class="card">
+        <div class="card-title" data-i18n="shifts_title"></div>
+        <div class="filter-row">
+          <input type="date" id="filter-from"/>
+          <span style="color:var(--gray-3)">—</span>
+          <input type="date" id="filter-to"/>
+          <button class="btn btn-primary" id="btn-load-shifts" data-i18n="btn_show"></button>
+        </div>
+        <div class="shifts-wrap" id="shifts-container">
+          <div class="no-data" data-i18n="shifts_hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ Сводка ─ -->
+    <div id="tab-summary" class="hidden">
+      <div class="card">
+        <div class="card-title" data-i18n="summary_title"></div>
+        <div class="filter-row">
+          <input type="month" id="filter-month"/>
+          <button class="btn btn-primary" id="btn-load-summary" data-i18n="btn_show"></button>
+        </div>
+        <div id="summary-container">
+          <div class="no-data" data-i18n="summary_hint"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  ПЕРЕВОДЫ
+// ════════════════════════════════════════════════════════
+const I18N = {
+  ru: {
+    auth_sub:          'Введите номер телефона для входа',
+    phone_label:       'Номер телефона',
+    phone_placeholder: '+7 900 000-00-00',
+    btn_login:         'Войти',
+    btn_logout:        'Выйти',
+    tab_profile:       'Профиль',
+    tab_shifts:        'Смены',
+    tab_summary:       'Сводка',
+    profile_title:     'Личные данные',
+    shifts_title:      'Мои смены',
+    summary_title:     'Выплаты за месяц',
+    btn_show:          'Показать',
+    shifts_hint:       'Выберите период и нажмите «Показать»',
+    summary_hint:      'Выберите месяц и нажмите «Показать»',
+    lbl_fio:           'ФИО',
+    lbl_phone:         'Телефон',
+    lbl_inn:           'ИНН',
+    lbl_citizenship:   'Гражданство',
+    lbl_type:          'Тип',
+    lbl_payment_freq:  'Выплаты',
+    lbl_supervisor:    'Супервайзер',
+    col_date:          'Дата',
+    col_store:         'Магазин',
+    col_service:       'Услуга',
+    col_hours:         'Часы',
+    col_rate:          'Тариф',
+    col_payment:       'Выплата',
+    stat_shifts:       'Смен',
+    stat_hours:        'Часов',
+    stat_payment:      'Выплата',
+    stat_lunch:        'Обед',
+    by_stores:         'По магазинам',
+    col_store2:        'Магазин',
+    col_shifts2:       'Смен',
+    col_payment2:      'Выплата',
+    no_shifts:         'Смен за этот период не найдено',
+    no_data:           'Нет данных',
+    err_not_found:     'Сотрудник с таким номером не найден',
+    total_label:       'Найдено смен',
+    total_sum:         'Итого',
+    type_fiz:          'Физ. лицо',
+    type_smz:          'Самозанятый',
+    type_migrant:      'Мигрант',
+    freq_daily:        'Ежедневные',
+    freq_weekly:       'Еженедельные',
+  },
+  tg: {
+    auth_sub:          'Рақами телефонатонро барои даромадан ворид кунед',
+    phone_label:       'Рақами телефон',
+    phone_placeholder: '+992 90 000-00-00',
+    btn_login:         'Ворид шудан',
+    btn_logout:        'Баромадан',
+    tab_profile:       'Профил',
+    tab_shifts:        'Навбатҳо',
+    tab_summary:       'Ҷамъбаст',
+    profile_title:     'Маълумоти шахсӣ',
+    shifts_title:      'Навбатҳои ман',
+    summary_title:     'Пардохт барои моҳ',
+    btn_show:          'Нишон додан',
+    shifts_hint:       'Давраро интихоб кунед ва «Нишон додан»-ро пахш кунед',
+    summary_hint:      'Моҳро интихоб кунед ва «Нишон додан»-ро пахш кунед',
+    lbl_fio:           'Ном ва насаб',
+    lbl_phone:         'Телефон',
+    lbl_inn:           'ИНН',
+    lbl_citizenship:   'Шаҳрвандӣ',
+    lbl_type:          'Намуд',
+    lbl_payment_freq:  'Пардохт',
+    lbl_supervisor:    'Назоратчӣ',
+    col_date:          'Сана',
+    col_store:         'Мағоза',
+    col_service:       'Хизмат',
+    col_hours:         'Соат',
+    col_rate:          'Нарх',
+    col_payment:       'Пардохт',
+    stat_shifts:       'Навбат',
+    stat_hours:        'Соатҳо',
+    stat_payment:      'Пардохт',
+    stat_lunch:        'Хӯрок',
+    by_stores:         'Аз рӯи мағозаҳо',
+    col_store2:        'Мағоза',
+    col_shifts2:       'Навбат',
+    col_payment2:      'Пардохт',
+    no_shifts:         'Барои ин давра навбат ёфт нашуд',
+    no_data:           'Маълумот нест',
+    err_not_found:     'Кормандеро бо ин рақам ёфтан мумкин нест',
+    total_label:       'Навбатҳо ёфт шуданд',
+    total_sum:         'Ҷамъ',
+    type_fiz:          'Шахси воқеӣ',
+    type_smz:          'Худкор',
+    type_migrant:      'Муҳоҷир',
+    freq_daily:        'Ҳаррӯза',
+    freq_weekly:       'Ҳафтаина',
+  },
+  uz: {
+    auth_sub:          'Kirish uchun telefon raqamingizni kiriting',
+    phone_label:       'Telefon raqami',
+    phone_placeholder: '+998 90 000-00-00',
+    btn_login:         'Kirish',
+    btn_logout:        'Chiqish',
+    tab_profile:       'Profil',
+    tab_shifts:        'Smenalar',
+    tab_summary:       'Xulosa',
+    profile_title:     'Shaxsiy ma\'lumotlar',
+    shifts_title:      'Mening smenalarim',
+    summary_title:     'Oylik to\'lov',
+    btn_show:          'Ko\'rsatish',
+    shifts_hint:       'Davrni tanlang va «Ko\'rsatish»ni bosing',
+    summary_hint:      'Oyni tanlang va «Ko\'rsatish»ni bosing',
+    lbl_fio:           'FIO',
+    lbl_phone:         'Telefon',
+    lbl_inn:           'INN',
+    lbl_citizenship:   'Fuqarolik',
+    lbl_type:          'Turi',
+    lbl_payment_freq:  'To\'lovlar',
+    lbl_supervisor:    'Nazoratchi',
+    col_date:          'Sana',
+    col_store:         'Do\'kon',
+    col_service:       'Xizmat',
+    col_hours:         'Soat',
+    col_rate:          'Tarif',
+    col_payment:       'To\'lov',
+    stat_shifts:       'Smena',
+    stat_hours:        'Soat',
+    stat_payment:      'To\'lov',
+    stat_lunch:        'Tushlik',
+    by_stores:         'Do\'konlar bo\'yicha',
+    col_store2:        'Do\'kon',
+    col_shifts2:       'Smena',
+    col_payment2:      'To\'lov',
+    no_shifts:         'Bu davr uchun smenalar topilmadi',
+    no_data:           'Ma\'lumot yo\'q',
+    err_not_found:     'Bunday raqamli xodim topilmadi',
+    total_label:       'Smenalar topildi',
+    total_sum:         'Jami',
+    type_fiz:          'Jismoniy shaxs',
+    type_smz:          'O\'z-o\'zini ish bilan ta\'minlovchi',
+    type_migrant:      'Migrant',
+    freq_daily:        'Kunlik',
+    freq_weekly:       'Haftalik',
+  },
+  ky: {
+    auth_sub:          'Кирүү үчүн телефон номериңизди киргизиңиз',
+    phone_label:       'Телефон номери',
+    phone_placeholder: '+996 700 00-00-00',
+    btn_login:         'Кирүү',
+    btn_logout:        'Чыгуу',
+    tab_profile:       'Профиль',
+    tab_shifts:        'Сменалар',
+    tab_summary:       'Жыйынтык',
+    profile_title:     'Жеке маалымат',
+    shifts_title:      'Менин сменаларым',
+    summary_title:     'Айлык төлөм',
+    btn_show:          'Көрсөтүү',
+    shifts_hint:       'Мезгилди тандап, «Көрсөтүү»нү басыңыз',
+    summary_hint:      'Айды тандап, «Көрсөтүү»нү басыңыз',
+    lbl_fio:           'АТА (аты-жөнү)',
+    lbl_phone:         'Телефон',
+    lbl_inn:           'ИНН',
+    lbl_citizenship:   'Жарандык',
+    lbl_type:          'Түрү',
+    lbl_payment_freq:  'Төлөмдөр',
+    lbl_supervisor:    'Куратор',
+    col_date:          'Күн',
+    col_store:         'Дүкөн',
+    col_service:       'Кызмат',
+    col_hours:         'Саат',
+    col_rate:          'Тариф',
+    col_payment:       'Төлөм',
+    stat_shifts:       'Смена',
+    stat_hours:        'Саат',
+    stat_payment:      'Төлөм',
+    stat_lunch:        'Түштүк',
+    by_stores:         'Дүкөндөр боюнча',
+    col_store2:        'Дүкөн',
+    col_shifts2:       'Смена',
+    col_payment2:      'Төлөм',
+    no_shifts:         'Бул мезгил үчүн сменалар табылган жок',
+    no_data:           'Маалымат жок',
+    err_not_found:     'Бул номерде кызматкер табылган жок',
+    total_label:       'Сменалар табылды',
+    total_sum:         'Жыйынтык',
+    type_fiz:          'Жеке адам',
+    type_smz:          'Өз алдынча иштөөчү',
+    type_migrant:      'Мигрант',
+    freq_daily:        'Күн сайын',
+    freq_weekly:       'Апта сайын',
+  },
+};
+
+// ════════════════════════════════════════════════════════
+//  СОСТОЯНИЕ
+// ════════════════════════════════════════════════════════
+let token = localStorage.getItem('lenta_token') || null;
+let lang  = localStorage.getItem('lenta_lang')  || 'ru';
+
+// ════════════════════════════════════════════════════════
+//  i18n
+// ════════════════════════════════════════════════════════
+function t(key) { return (I18N[lang] || I18N.ru)[key] || key; }
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  document.documentElement.lang = lang;
+}
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('lenta_lang', l);
+  applyLang();
+  // Перерисовываем динамический контент если уже загружен
+  if (token) {
+    renderProfile(window._profileCache);
+    if (window._shiftsCache)  renderShifts(window._shiftsCache);
+    if (window._summaryCache) renderSummary(window._summaryCache);
+  }
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => setLang(btn.dataset.lang));
+});
+
+// ════════════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body)  opts.body = JSON.stringify(body);
+  const res  = await fetch(path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Error');
+  return data;
+}
+
+// ════════════════════════════════════════════════════════
+//  РОУТИНГ
+// ════════════════════════════════════════════════════════
+function showAuth() {
+  document.getElementById('screen-auth').classList.remove('hidden');
+  document.getElementById('screen-app').classList.add('hidden');
+}
+function showApp() {
+  document.getElementById('screen-auth').classList.add('hidden');
+  document.getElementById('screen-app').classList.remove('hidden');
+}
+
+// Табы
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['profile','shifts','summary'].forEach(name => {
+      document.getElementById('tab-' + name)
+              .classList.toggle('hidden', name !== btn.dataset.tab);
+    });
+  });
+});
+
+// ════════════════════════════════════════════════════════
+//  ВХОД
+// ════════════════════════════════════════════════════════
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const phone = document.getElementById('inp-phone').value.trim();
+  const errEl = document.getElementById('err-login');
+  errEl.textContent = '';
+  if (!phone) return;
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  try {
+    const res = await api('POST', '/auth/login', { phone });
+    token = res.access_token;
+    localStorage.setItem('lenta_token', token);
+    showApp();
+    loadProfile();
+  } catch(e) {
+    errEl.textContent = e.message.includes('404') ? t('err_not_found') : e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('inp-phone').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-login').click();
+});
+
+// ════════════════════════════════════════════════════════
+//  ВЫХОД
+// ════════════════════════════════════════════════════════
+document.getElementById('btn-logout').addEventListener('click', () => {
+  token = null;
+  localStorage.removeItem('lenta_token');
+  window._profileCache = null;
+  window._shiftsCache  = null;
+  window._summaryCache = null;
+  document.getElementById('profile-grid').innerHTML = '<div class="spinner"></div>';
+  showAuth();
+});
+
+// ════════════════════════════════════════════════════════
+//  ПРОФИЛЬ
+// ════════════════════════════════════════════════════════
+async function loadProfile() {
+  try {
+    const emp = await api('GET', '/me');
+    window._profileCache = emp;
+    renderProfile(emp);
+  } catch(e) {
+    if (e.message.includes('401')) { token = null; localStorage.removeItem('lenta_token'); showAuth(); }
+  }
+}
+
+function renderProfile(emp) {
+  if (!emp) return;
+  document.getElementById('header-name').textContent = shortName(emp.full_name);
+
+  const typeMap = { физ_лицо: t('type_fiz'), смз: t('type_smz'), мигрант: t('type_migrant') };
+  const freqMap = { ежедневные: t('freq_daily'), еженедельные: t('freq_weekly') };
+
+  document.getElementById('profile-grid').innerHTML = `
+    <div class="profile-item" style="grid-column:1/-1">
+      <label>${t('lbl_fio')}</label>
+      <div class="val" style="font-size:18px;font-weight:700">${emp.full_name || '—'}</div>
+    </div>
+    <div class="profile-item">
+      <label>${t('lbl_phone')}</label>
+      <div class="val">${emp.phone || '—'}</div>
+    </div>
+    <div class="profile-item">
+      <label>${t('lbl_inn')}</label>
+      <div class="val">${emp.inn || '—'}</div>
+    </div>
+    <div class="profile-item">
+      <label>${t('lbl_citizenship')}</label>
+      <div class="val">${emp.citizenship || '—'}</div>
+    </div>
+    <div class="profile-item">
+      <label>${t('lbl_type')}</label>
+      <div class="val">
+        <span class="badge badge-green">${typeMap[emp.employee_type] || emp.employee_type || '—'}</span>
+      </div>
+    </div>
+    <div class="profile-item">
+      <label>${t('lbl_payment_freq')}</label>
+      <div class="val">
+        <span class="badge badge-gray">${freqMap[emp.payment_frequency] || emp.payment_frequency || '—'}</span>
+      </div>
+    </div>
+    <div class="profile-item">
+      <label>${t('lbl_supervisor')}</label>
+      <div class="val">${emp.supervisor || '—'}</div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════
+//  СМЕНЫ
+// ════════════════════════════════════════════════════════
+const now = new Date();
+const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+document.getElementById('filter-from').value = `${y}-${m}-01`;
+document.getElementById('filter-to').value   = now.toISOString().slice(0,10);
+
+document.getElementById('btn-load-shifts').addEventListener('click', async () => {
+  const from = document.getElementById('filter-from').value;
+  const to   = document.getElementById('filter-to').value;
+  const cont = document.getElementById('shifts-container');
+  cont.innerHTML = '<div class="spinner"></div>';
+  try {
+    const params = new URLSearchParams();
+    if (from) params.append('from_date', from);
+    if (to)   params.append('to_date', to);
+    const res = await api('GET', '/me/shifts?' + params);
+    window._shiftsCache = res;
+    renderShifts(res);
+  } catch(e) {
+    cont.innerHTML = `<div class="no-data" style="color:var(--red)">${e.message}</div>`;
+  }
+});
+
+function renderShifts(res) {
+  const cont = document.getElementById('shifts-container');
+  if (!res || !res.shifts.length) {
+    cont.innerHTML = `<div class="no-data">${t('no_shifts')}</div>`; return;
+  }
+  const total = res.shifts.reduce((s,r) => s + (Number(r['выплата'])||0), 0);
+  cont.innerHTML = `
+    <div style="font-size:13px;color:var(--gray-3);margin-bottom:12px">
+      ${t('total_label')}: <b>${res.total}</b>
+      &nbsp;·&nbsp; ${t('total_sum')}: <b class="amt">${fmt(total)} ₽</b>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>${t('col_date')}</th>
+          <th>${t('col_store')}</th>
+          <th>${t('col_service')}</th>
+          <th>${t('col_hours')}</th>
+          <th>${t('col_rate')}</th>
+          <th>${t('col_payment')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${res.shifts.map(s => `
+          <tr>
+            <td>${formatDate(s['shift_date'])}</td>
+            <td>${s['магазин'] || '—'}</td>
+            <td style="max-width:180px;font-size:12px">${s['услуга'] || '—'}</td>
+            <td>${s['часы_оплата'] ?? '—'}</td>
+            <td>${s['тариф'] ? s['тариф'] + ' ₽' : '—'}</td>
+            <td class="amt">${s['выплата'] ? fmt(s['выплата']) + ' ₽' : '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  СВОДКА
+// ════════════════════════════════════════════════════════
+document.getElementById('filter-month').value = `${y}-${m}`;
+
+document.getElementById('btn-load-summary').addEventListener('click', async () => {
+  const month = document.getElementById('filter-month').value;
+  const cont  = document.getElementById('summary-container');
+  cont.innerHTML = '<div class="spinner"></div>';
+  try {
+    const res = await api('GET', '/me/summary?month=' + month);
+    window._summaryCache = res;
+    renderSummary(res);
+  } catch(e) {
+    cont.innerHTML = `<div class="no-data" style="color:var(--red)">${e.message}</div>`;
+  }
+});
+
+function renderSummary(res) {
+  const cont = document.getElementById('summary-container');
+  if (!res) return;
+  const it = res['итого'];
+  cont.innerHTML = `
+    <div class="summary-grid" style="margin-bottom:20px">
+      <div class="stat-box">
+        <div class="stat-val">${it['смен'] || 0}</div>
+        <div class="stat-label">${t('stat_shifts')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${it['часов_всего'] || 0}</div>
+        <div class="stat-label">${t('stat_hours')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${fmt(it['выплата_всего'])} ₽</div>
+        <div class="stat-label">${t('stat_payment')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${fmt(it['компенсация_обеда'])} ₽</div>
+        <div class="stat-label">${t('stat_lunch')}</div>
+      </div>
+    </div>
+    ${res['по_магазинам'].length ? `
+      <div class="card-title" style="margin-bottom:12px">${t('by_stores')}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>${t('col_store2')}</th>
+            <th>${t('col_shifts2')}</th>
+            <th>${t('col_payment2')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${res['по_магазинам'].map(r => `
+            <tr>
+              <td>${r['магазин'] || '—'}</td>
+              <td>${r['смен']}</td>
+              <td class="amt">${fmt(r['выплата'])} ₽</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : `<div class="no-data">${t('no_data')}</div>`}`;
+}
+
+// ════════════════════════════════════════════════════════
+//  УТИЛИТЫ
+// ════════════════════════════════════════════════════════
+function shortName(n) {
+  if (!n) return '';
+  const p = n.trim().split(' ');
+  return p[0] + (p[1] ? ' ' + p[1][0] + '.' : '');
+}
+function formatDate(s) {
+  if (!s) return '—';
+  return new Date(s + 'T00:00:00').toLocaleDateString('ru', { day:'2-digit', month:'short', year:'numeric' });
+}
+function fmt(n) { return n ? Number(n).toLocaleString('ru') : '0'; }
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+applyLang();
+if (token) { showApp(); loadProfile(); }
+else        { showAuth(); }
+</script>
+</body>
+</html>
