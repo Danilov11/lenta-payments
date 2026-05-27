@@ -90,6 +90,11 @@ def init_db():
     );
     CREATE INDEX IF NOT EXISTS idx_shifts_employee_date ON shifts(employee_id, shift_date);
     CREATE INDEX IF NOT EXISTS idx_employees_phone ON employees(phone);
+
+    -- Тестовый пользователь (для демо)
+    INSERT INTO employees (full_name, phone, employee_type)
+    VALUES ('Тестовый пользователь', '79059057757', 'физ_лицо')
+    ON CONFLICT (phone) DO NOTHING;
     """
     try:
         conn = psycopg2.connect(DSN)
