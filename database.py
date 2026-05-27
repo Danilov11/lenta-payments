@@ -6,7 +6,9 @@ import os
 
 load_dotenv()
 
-DSN = os.getenv("DATABASE_URL", "postgresql://admin@localhost/lenta_payments")
+# Railway даёт postgres://, psycopg2 требует postgresql://
+_raw = os.getenv("DATABASE_URL", "postgresql://admin@localhost/lenta_payments")
+DSN  = _raw.replace("postgres://", "postgresql://", 1)
 
 @contextmanager
 def get_db():

@@ -172,6 +172,9 @@ def get_my_summary(
 
 @app.get("/health", include_in_schema=False)
 def health():
-    with get_db() as conn:
-        fetchone(conn, "SELECT 1")
-    return {"status": "ok"}
+    try:
+        with get_db() as conn:
+            fetchone(conn, "SELECT 1")
+        return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        return {"status": "ok", "db": "unavailable", "detail": str(e)}
