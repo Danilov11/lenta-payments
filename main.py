@@ -13,8 +13,94 @@ from datetime import date
 import re
 import os
 
-from database import get_db, fetchone, fetchall
+from database import get_db, fetchone, fetchall, DSN
 from auth import create_access_token, get_current_employee_id
+import psycopg2
+
+def init_db():
+    """Создаёт таблицы если их нет (идемпотентно)."""
+    schema = """
+    CREATE TABLE IF NOT EXISTS cities (
+        city_id   SERIAL PRIMARY KEY,
+        city_name VARCHAR(100) UNIQUE NOT NULL,
+        division  VARCHAR(100)
+    );
+    CREATE TABLE IF NOT EXISTS stores (
+        store_id        INTEGER PRIMARY KEY,
+        store_name      VARCHAR(200),
+        city_id         INTEGER REFERENCES cities(city_id),
+        format          VARCHAR(20),
+        parent_store_id INTEGER REFERENCES stores(store_id)
+    );
+    CREATE TABLE IF NOT EXISTS suppliers (
+        supplier_id   SERIAL PRIMARY KEY,
+        supplier_name VARCHAR(200) UNIQUE NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS services (
+        service_id    SERIAL PRIMARY KEY,
+        service_name  VARCHAR(300) UNIQUE NOT NULL,
+        service_level SMALLINT
+    );
+    CREATE TABLE IF NOT EXISTS tariffs (
+        tariff_id      SERIAL PRIMARY KEY,
+        city_id        INTEGER REFERENCES cities(city_id),
+        store_format   VARCHAR(20),
+        service_id     INTEGER REFERENCES services(service_id),
+        rate           NUMERIC(10,2) NOT NULL,
+        effective_date DATE NOT NULL,
+        UNIQUE (city_id, store_format, service_id, effective_date)
+    );
+    CREATE TABLE IF NOT EXISTS employees (
+        employee_id       SERIAL PRIMARY KEY,
+        full_name         VARCHAR(300) NOT NULL,
+        phone             VARCHAR(30) UNIQUE,
+        inn               VARCHAR(20),
+        citizenship       VARCHAR(100),
+        employee_type     VARCHAR(30),
+        payment_frequency VARCHAR(30),
+        supervisor        VARCHAR(200)
+    );
+    CREATE TABLE IF NOT EXISTS shifts (
+        shift_id           SERIAL PRIMARY KEY,
+        shift_date         DATE NOT NULL,
+        employee_id        INTEGER REFERENCES employees(employee_id),
+        store_id           INTEGER REFERENCES stores(store_id),
+        service_id         INTEGER REFERENCES services(service_id),
+        supplier_id        INTEGER REFERENCES suppliers(supplier_id),
+        tariff_id          INTEGER REFERENCES tariffs(tariff_id),
+        shift_type         VARCHAR(50),
+        status_customer    VARCHAR(50),
+        status_contractor  VARCHAR(50),
+        planned_start      TIME,
+        planned_end        TIME,
+        actual_start       TIME,
+        actual_end         TIME,
+        hours_paid         NUMERIC(5,2),
+        lunch_compensation NUMERIC(10,2) DEFAULT 0,
+        total_payment      NUMERIC(10,2),
+        sections           TEXT,
+        note               TEXT
+    );
+    CREATE TABLE IF NOT EXISTS telegram_links (
+        id         SERIAL PRIMARY KEY,
+        phone      VARCHAR(30) UNIQUE NOT NULL,
+        chat_id    BIGINT UNIQUE NOT NULL,
+        username   VARCHAR(100),
+        linked_at  TIMESTAMP DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_shifts_employee_date ON shifts(employee_id, shift_date);
+    CREATE INDEX IF NOT EXISTS idx_employees_phone ON employees(phone);
+    """
+    try:
+        conn = psycopg2.connect(DSN)
+        cur  = conn.cursor()
+        cur.execute(schema)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✓ DB schema ready")
+    except Exception as e:
+        print(f"✗ DB init error: {e}")
 
 app = FastAPI(
     title="Lenta Payments API",
@@ -32,6 +118,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
