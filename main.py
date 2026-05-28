@@ -88,6 +88,30 @@ def init_db():
         username   VARCHAR(100),
         linked_at  TIMESTAMP DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS referrals (
+        referral_id          SERIAL PRIMARY KEY,
+        project              VARCHAR(100),
+        city                 VARCHAR(100),
+        month                INTEGER,
+        year                 INTEGER,
+        period               VARCHAR(100),
+        referred_name        VARCHAR(500),
+        referred_phone       VARCHAR(30),
+        referrer_name        VARCHAR(500),
+        referrer_employee_id INTEGER REFERENCES employees(employee_id),
+        amount               NUMERIC(10,2),
+        status               VARCHAR(100)
+    );
+    CREATE TABLE IF NOT EXISTS advances (
+        advance_id   SERIAL PRIMARY KEY,
+        employee_id  INTEGER REFERENCES employees(employee_id),
+        advance_date DATE NOT NULL,
+        amount       NUMERIC(10,2) NOT NULL,
+        note         TEXT,
+        created_at   TIMESTAMP DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_employee_id);
+    CREATE INDEX IF NOT EXISTS idx_advances_employee  ON advances(employee_id);
     CREATE INDEX IF NOT EXISTS idx_shifts_employee_date ON shifts(employee_id, shift_date);
     CREATE INDEX IF NOT EXISTS idx_employees_phone ON employees(phone);
 
@@ -310,6 +334,54 @@ def mark_notifications_read(employee_id: int = Depends(get_current_employee_id))
             "UPDATE employees SET notifications_seen_at = NOW() WHERE employee_id = %s",
             (employee_id,))
     return {"status": "ok"}
+
+
+# ─── Реферальная программа ───────────────────────────────────────────────────
+
+@app.get("/me/referrals", summary="Мои рефералы по акции «Приведи друга»")
+def get_my_referrals(employee_id: int = Depends(get_current_employee_id)):
+    with get_db() as conn:
+        rows = fetchall(conn, """
+            SELECT
+                project      AS проект,
+                city         AS город,
+                year         AS год,
+                month        AS месяц,
+                period       AS период,
+                referred_name  AS приведённый,
+                referred_phone AS телефон,
+                amount         AS сумма_премии,
+                status         AS статус
+            FROM referrals
+            WHERE referrer_employee_id = %s
+            ORDER BY year DESC, month DESC
+        """, (employee_id,))
+    return {"total": len(rows), "referrals": [dict(r) for r in rows]}
+
+
+# ─── Авансы ──────────────────────────────────────────────────────────────────
+
+@app.get("/me/advances", summary="Мои авансы")
+def get_my_advances(employee_id: int = Depends(get_current_employee_id)):
+    with get_db() as conn:
+        rows = fetchall(conn, """
+            SELECT
+                advance_id,
+                advance_date AS дата,
+                amount       AS сумма,
+                note         AS примечание
+            FROM advances
+            WHERE employee_id = %s
+            ORDER BY advance_date DESC
+        """, (employee_id,))
+        total = fetchone(conn, """
+            SELECT COALESCE(SUM(amount), 0) AS итого
+            FROM advances WHERE employee_id = %s
+        """, (employee_id,))
+    return {
+        "total_amount": float(total["итого"]),
+        "advances": [dict(r) for r in rows]
+    }
 
 
 # ─── Здоровье ────────────────────────────────────────────────────────────────

@@ -200,6 +200,23 @@
       80%     { transform: rotate(-10deg); }
     }
     .hidden { display: none !important; }
+
+    /* ── Реферальная программа и авансы ── */
+    .section-card {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px 24px; margin-bottom: 16px;
+    }
+    .section-card .card-title { margin-bottom: 14px; }
+    .ref-badge-paid   { background: #e8f5ed; color: #1a7a3c; }
+    .ref-badge-unpaid { background: #fff3e0; color: #e65c00; }
+    .ref-badge-other  { background: var(--gray-1); color: var(--gray-3); }
+    .adv-total-box {
+      background: var(--gray-0); border-radius: 10px;
+      padding: 12px 16px; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 14px;
+    }
+    .adv-total-label { font-size: 13px; color: var(--gray-3); }
+    .adv-total-val   { font-size: 20px; font-weight: 700; color: var(--red); }
   </style>
 </head>
 <body>
@@ -269,6 +286,16 @@
         <div class="card-title" data-i18n="profile_title"></div>
         <div class="profile-grid" id="profile-grid"><div class="spinner"></div></div>
       </div>
+      <!-- Авансы -->
+      <div class="section-card" id="advances-card" style="display:none">
+        <div class="card-title" data-i18n="lbl_advances"></div>
+        <div id="advances-container"><div class="spinner"></div></div>
+      </div>
+      <!-- Реферальная программа -->
+      <div class="section-card" id="referrals-card" style="display:none">
+        <div class="card-title" data-i18n="lbl_referrals"></div>
+        <div id="referrals-container"><div class="spinner"></div></div>
+      </div>
     </div>
 
     <!-- ─ Смены ─ -->
@@ -327,9 +354,20 @@ const I18N = {
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Гражданство',
-    lbl_type:          'Тип',
     lbl_payment_freq:  'Выплаты',
-    lbl_supervisor:    'Супервайзер',
+    lbl_referrals:     'Программа «Приведи друга»',
+    lbl_ref_referred:  'Привлечённый',
+    lbl_ref_period:    'Период',
+    lbl_ref_amount:    'Премия',
+    lbl_ref_status:    'Статус',
+    lbl_ref_empty:     'Рефералов пока нет',
+    lbl_ref_total:     'Всего записей',
+    lbl_advances:      'Авансы',
+    lbl_adv_date:      'Дата',
+    lbl_adv_amount:    'Сумма',
+    lbl_adv_note:      'Примечание',
+    lbl_adv_empty:     'Авансов нет',
+    lbl_adv_total:     'Итого авансов',
     col_date:          'Дата',
     col_store:         'Магазин',
     col_service:       'Услуга',
@@ -377,9 +415,20 @@ const I18N = {
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Шаҳрвандӣ',
-    lbl_type:          'Намуд',
     lbl_payment_freq:  'Пардохт',
-    lbl_supervisor:    'Назоратчӣ',
+    lbl_referrals:     'Барнома «Дӯст биёр»',
+    lbl_ref_referred:  'Овардашуда',
+    lbl_ref_period:    'Давра',
+    lbl_ref_amount:    'Мукофот',
+    lbl_ref_status:    'Ҳолат',
+    lbl_ref_empty:     'Рефералҳо нестанд',
+    lbl_ref_total:     'Ҷамъи сабтҳо',
+    lbl_advances:      'Пешпардохтҳо',
+    lbl_adv_date:      'Сана',
+    lbl_adv_amount:    'Маблағ',
+    lbl_adv_note:      'Шарҳ',
+    lbl_adv_empty:     'Пешпардохт нест',
+    lbl_adv_total:     'Ҷамъи пешпардохтҳо',
     col_date:          'Сана',
     col_store:         'Мағоза',
     col_service:       'Хизмат',
@@ -427,9 +476,20 @@ const I18N = {
     lbl_phone:         'Telefon',
     lbl_inn:           'INN',
     lbl_citizenship:   'Fuqarolik',
-    lbl_type:          'Turi',
     lbl_payment_freq:  'To\'lovlar',
-    lbl_supervisor:    'Nazoratchi',
+    lbl_referrals:     '«Do\'st olib kel» dasturi',
+    lbl_ref_referred:  'Jalb qilingan',
+    lbl_ref_period:    'Davr',
+    lbl_ref_amount:    'Mukofot',
+    lbl_ref_status:    'Holat',
+    lbl_ref_empty:     'Referallar yo\'q',
+    lbl_ref_total:     'Jami yozuvlar',
+    lbl_advances:      'Avanslar',
+    lbl_adv_date:      'Sana',
+    lbl_adv_amount:    'Summa',
+    lbl_adv_note:      'Izoh',
+    lbl_adv_empty:     'Avans yo\'q',
+    lbl_adv_total:     'Jami avanslar',
     col_date:          'Sana',
     col_store:         'Do\'kon',
     col_service:       'Xizmat',
@@ -477,9 +537,20 @@ const I18N = {
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Жарандык',
-    lbl_type:          'Түрү',
     lbl_payment_freq:  'Төлөмдөр',
-    lbl_supervisor:    'Куратор',
+    lbl_referrals:     '«Дос алып кел» программасы',
+    lbl_ref_referred:  'Тартылган',
+    lbl_ref_period:    'Мезгил',
+    lbl_ref_amount:    'Сыйлык',
+    lbl_ref_status:    'Статус',
+    lbl_ref_empty:     'Реферал жок',
+    lbl_ref_total:     'Жалпы жазуулар',
+    lbl_advances:      'Аванстар',
+    lbl_adv_date:      'Күн',
+    lbl_adv_amount:    'Сумма',
+    lbl_adv_note:      'Эскертме',
+    lbl_adv_empty:     'Аванс жок',
+    lbl_adv_total:     'Жалпы аванстар',
     col_date:          'Күн',
     col_store:         'Дүкөн',
     col_service:       'Кызмат',
@@ -541,8 +612,10 @@ function setLang(l) {
   // Перерисовываем динамический контент если уже загружен
   if (token) {
     renderProfile(window._profileCache);
-    if (window._shiftsCache)  renderShifts(window._shiftsCache);
-    if (window._summaryCache) renderSummary(window._summaryCache);
+    if (window._shiftsCache)    renderShifts(window._shiftsCache);
+    if (window._summaryCache)   renderSummary(window._summaryCache);
+    if (window._advancesCache)  renderAdvances(window._advancesCache);
+    if (window._referralsCache) renderReferrals(window._referralsCache);
   }
 }
 
@@ -625,9 +698,11 @@ document.getElementById('inp-phone').addEventListener('keydown', e => {
 document.getElementById('btn-logout').addEventListener('click', () => {
   token = null;
   localStorage.removeItem('lenta_token');
-  window._profileCache = null;
-  window._shiftsCache  = null;
-  window._summaryCache = null;
+  window._profileCache  = null;
+  window._shiftsCache   = null;
+  window._summaryCache  = null;
+  window._advancesCache = null;
+  window._referralsCache = null;
   document.getElementById('profile-grid').innerHTML = '<div class="spinner"></div>';
   showAuth();
 });
@@ -642,14 +717,17 @@ async function loadProfile() {
     renderProfile(emp);
   } catch(e) {
     if (e.message.includes('401')) { token = null; localStorage.removeItem('lenta_token'); showAuth(); }
+    return;
   }
+  // Загружаем авансы и рефералы параллельно
+  loadAdvances();
+  loadReferrals();
 }
 
 function renderProfile(emp) {
   if (!emp) return;
   document.getElementById('header-name').textContent = shortName(emp.full_name);
 
-  const typeMap = { физ_лицо: t('type_fiz'), смз: t('type_smz'), мигрант: t('type_migrant') };
   const freqMap = { ежедневные: t('freq_daily'), еженедельные: t('freq_weekly') };
 
   document.getElementById('profile-grid').innerHTML = `
@@ -670,22 +748,114 @@ function renderProfile(emp) {
       <div class="val">${emp.citizenship || '—'}</div>
     </div>
     <div class="profile-item">
-      <label>${t('lbl_type')}</label>
-      <div class="val">
-        <span class="badge badge-green">${typeMap[emp.employee_type] || emp.employee_type || '—'}</span>
-      </div>
-    </div>
-    <div class="profile-item">
       <label>${t('lbl_payment_freq')}</label>
       <div class="val">
         <span class="badge badge-gray">${freqMap[emp.payment_frequency] || emp.payment_frequency || '—'}</span>
       </div>
     </div>
-    <div class="profile-item">
-      <label>${t('lbl_supervisor')}</label>
-      <div class="val">${emp.supervisor || '—'}</div>
-    </div>
   `;
+}
+
+// ════════════════════════════════════════════════════════
+//  АВАНСЫ
+// ════════════════════════════════════════════════════════
+async function loadAdvances() {
+  try {
+    const res = await api('GET', '/me/advances');
+    window._advancesCache = res;
+    renderAdvances(res);
+  } catch(e) { /* тихо */ }
+}
+
+function renderAdvances(res) {
+  const card = document.getElementById('advances-card');
+  const cont = document.getElementById('advances-container');
+  if (!res || res.advances.length === 0) {
+    card.style.display = 'none'; return;
+  }
+  card.style.display = 'block';
+  cont.innerHTML = `
+    <div class="adv-total-box">
+      <span class="adv-total-label">${t('lbl_adv_total')}</span>
+      <span class="adv-total-val">−${fmt(res.total_amount)} ₽</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>${t('lbl_adv_date')}</th>
+          <th>${t('lbl_adv_amount')}</th>
+          <th>${t('lbl_adv_note')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${res.advances.map(a => `
+          <tr>
+            <td>${formatDate(a['дата'])}</td>
+            <td style="color:var(--red);font-weight:600">−${fmt(a['сумма'])} ₽</td>
+            <td style="font-size:13px;color:var(--gray-3)">${a['примечание'] || '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  РЕФЕРАЛЫ
+// ════════════════════════════════════════════════════════
+async function loadReferrals() {
+  try {
+    const res = await api('GET', '/me/referrals');
+    window._referralsCache = res;
+    renderReferrals(res);
+  } catch(e) { /* тихо */ }
+}
+
+function refStatusBadge(status) {
+  if (!status) return `<span class="badge ref-badge-other">—</span>`;
+  const s = status.toLowerCase();
+  if (s.includes('оплачено') || s.includes('оплатили'))
+    return `<span class="badge ref-badge-paid">${status}</span>`;
+  if (s.includes('не оплачено') || s.includes('в работе'))
+    return `<span class="badge ref-badge-unpaid">${status}</span>`;
+  return `<span class="badge ref-badge-other">${status}</span>`;
+}
+
+function renderReferrals(res) {
+  const card = document.getElementById('referrals-card');
+  const cont = document.getElementById('referrals-container');
+  if (!res || res.referrals.length === 0) {
+    card.style.display = 'none'; return;
+  }
+  card.style.display = 'block';
+  const totalPaid = res.referrals
+    .filter(r => (r['статус']||'').toLowerCase().includes('оплач'))
+    .reduce((s,r) => s + (Number(r['сумма_премии'])||0), 0);
+
+  cont.innerHTML = `
+    <div style="font-size:13px;color:var(--gray-3);margin-bottom:14px">
+      ${t('lbl_ref_total')}: <b>${res.total}</b>
+      &nbsp;·&nbsp; ${t('stat_payment')}: <b class="amt">${fmt(totalPaid)} ₽</b>
+    </div>
+    <div class="shifts-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>${t('lbl_ref_referred')}</th>
+          <th>${t('lbl_ref_period')}</th>
+          <th>${t('lbl_ref_amount')}</th>
+          <th>${t('lbl_ref_status')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${res.referrals.map(r => `
+          <tr>
+            <td style="font-size:13px">${r['приведённый'] || '—'}</td>
+            <td style="font-size:12px;color:var(--gray-3)">${r['период'] || (r['месяц'] ? r['месяц']+'.'+r['год'] : '—')}</td>
+            <td class="amt">${r['сумма_премии'] ? fmt(r['сумма_премии'])+' ₽' : '—'}</td>
+            <td>${refStatusBadge(r['статус'])}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
 }
 
 // ════════════════════════════════════════════════════════
