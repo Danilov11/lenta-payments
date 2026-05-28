@@ -13,7 +13,7 @@ from datetime import date
 import re
 import os
 
-from database import get_db, fetchone, fetchall, DSN
+from database import get_db, fetchone, fetchall, execute, DSN
 from auth import create_access_token, get_current_employee_id
 import psycopg2
 
@@ -265,6 +265,51 @@ def get_my_summary(
         """, (employee_id, from_date, to_date))
 
     return {"месяц": month, "итого": dict(row), "по_магазинам": [dict(r) for r in by_store]}
+
+
+# ─── Уведомления ─────────────────────────────────────────────────────────────
+
+@app.get("/me/notifications", summary="Новые выплаты с последнего просмотра")
+def get_notifications(employee_id: int = Depends(get_current_employee_id)):
+    with get_db() as conn:
+        # Берём дату последнего просмотра
+        emp = fetchone(conn,
+            "SELECT notifications_seen_at FROM employees WHERE employee_id=%s",
+            (employee_id,))
+        seen_at = emp["notifications_seen_at"] if emp else None
+
+        # Смены с выплатой добавленные после последнего просмотра
+        new_payments = fetchall(conn, """
+            SELECT
+                s.shift_date,
+                st.store_name  AS магазин,
+                c.city_name    AS город,
+                s.total_payment AS выплата,
+                s.hours_paid    AS часы
+            FROM shifts s
+            LEFT JOIN stores st ON st.store_id = s.store_id
+            LEFT JOIN cities c  ON c.city_id   = st.city_id
+            WHERE s.employee_id = %s
+              AND s.total_payment > 0
+              AND s.shift_date > %s
+            ORDER BY s.shift_date DESC
+            LIMIT 20
+        """, (employee_id, seen_at))
+
+    return {
+        "count": len(new_payments),
+        "payments": [dict(r) for r in new_payments],
+        "seen_at": seen_at.isoformat() if seen_at else None,
+    }
+
+
+@app.post("/me/notifications/read", summary="Отметить уведомления как прочитанные")
+def mark_notifications_read(employee_id: int = Depends(get_current_employee_id)):
+    with get_db() as conn:
+        execute(conn,
+            "UPDATE employees SET notifications_seen_at = NOW() WHERE employee_id = %s",
+            (employee_id,))
+    return {"status": "ok"}
 
 
 # ─── Здоровье ────────────────────────────────────────────────────────────────

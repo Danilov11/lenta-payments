@@ -44,6 +44,49 @@
     }
     #btn-logout:hover { background: rgba(255,255,255,.25); }
 
+    /* ── Колокольчик ── */
+    .bell-wrap { position: relative; }
+    #btn-bell {
+      background: none; border: none; color: #fff; cursor: pointer;
+      font-size: 20px; padding: 4px 6px; line-height: 1;
+      position: relative; transition: transform .2s;
+    }
+    #btn-bell:hover { transform: scale(1.15); }
+    .bell-badge {
+      position: absolute; top: -2px; right: -2px;
+      background: #ff4444; color: #fff;
+      font-size: 10px; font-weight: 700;
+      min-width: 16px; height: 16px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; pointer-events: none;
+    }
+    .bell-badge.hidden { display: none; }
+
+    /* ── Дропдаун уведомлений ── */
+    .notif-dropdown {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      width: 320px; background: #fff; border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,.18); z-index: 100;
+      overflow: hidden;
+    }
+    .notif-dropdown.hidden { display: none; }
+    .notif-header {
+      padding: 14px 16px; font-size: 13px; font-weight: 700;
+      color: var(--gray-3); border-bottom: 1px solid var(--gray-1);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .notif-list { max-height: 340px; overflow-y: auto; }
+    .notif-item {
+      padding: 12px 16px; border-bottom: 1px solid var(--gray-1);
+      cursor: default; transition: background .15s;
+    }
+    .notif-item:hover { background: var(--gray-0); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-date  { font-size: 11px; color: var(--gray-2); margin-bottom: 3px; }
+    .notif-store { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+    .notif-amt   { font-size: 16px; font-weight: 700; color: var(--green); }
+    .notif-empty { padding: 24px; text-align: center; color: var(--gray-2); font-size: 13px; }
+
     /* ── Layout ── */
     main { padding: 24px 16px; max-width: 760px; margin: 0 auto; }
 
@@ -149,6 +192,13 @@
       animation: spin .7s linear infinite; margin: 28px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bellRing {
+      0%,100% { transform: rotate(0); }
+      20%     { transform: rotate(15deg); }
+      40%     { transform: rotate(-15deg); }
+      60%     { transform: rotate(10deg); }
+      80%     { transform: rotate(-10deg); }
+    }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -190,6 +240,18 @@
         <button class="lang-btn" data-lang="ky">КЫР</button>
       </div>
       <span class="user-name" id="header-name"></span>
+      <div class="bell-wrap">
+        <button id="btn-bell" title="Уведомления">🔔
+          <span class="bell-badge hidden" id="bell-badge">0</span>
+        </button>
+        <div class="notif-dropdown hidden" id="notif-dropdown">
+          <div class="notif-header">
+            <span data-i18n="notif_title"></span>
+            <span id="notif-count-label" style="color:var(--green);font-size:12px"></span>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+      </div>
       <button id="btn-logout" data-i18n="btn_logout"></button>
     </div>
   </header>
@@ -292,6 +354,9 @@ const I18N = {
     type_migrant:      'Мигрант',
     freq_daily:        'Ежедневные',
     freq_weekly:       'Еженедельные',
+    notif_title:       'Новые выплаты',
+    notif_empty:       'Новых выплат нет',
+    notif_new:         'новых',
   },
   tg: {
     auth_sub:          'Рақами телефонатонро барои даромадан ворид кунед',
@@ -339,6 +404,9 @@ const I18N = {
     type_migrant:      'Муҳоҷир',
     freq_daily:        'Ҳаррӯза',
     freq_weekly:       'Ҳафтаина',
+    notif_title:       'Пардохтҳои нав',
+    notif_empty:       'Пардохти нав нест',
+    notif_new:         'нав',
   },
   uz: {
     auth_sub:          'Kirish uchun telefon raqamingizni kiriting',
@@ -386,6 +454,9 @@ const I18N = {
     type_migrant:      'Migrant',
     freq_daily:        'Kunlik',
     freq_weekly:       'Haftalik',
+    notif_title:       'Yangi to\'lovlar',
+    notif_empty:       'Yangi to\'lov yo\'q',
+    notif_new:         'yangi',
   },
   ky: {
     auth_sub:          'Кирүү үчүн телефон номериңизди киргизиңиз',
@@ -433,6 +504,9 @@ const I18N = {
     type_migrant:      'Мигрант',
     freq_daily:        'Күн сайын',
     freq_weekly:       'Апта сайын',
+    notif_title:       'Жаңы төлөмдөр',
+    notif_empty:       'Жаңы төлөм жок',
+    notif_new:         'жаңы',
   },
 };
 
@@ -533,6 +607,7 @@ document.getElementById('btn-login').addEventListener('click', async () => {
     localStorage.setItem('lenta_token', token);
     showApp();
     loadProfile();
+    loadNotifications();
   } catch(e) {
     errEl.textContent = e.message.includes('404') ? t('err_not_found') : e.message;
   } finally {
@@ -751,10 +826,73 @@ function formatDate(s) {
 function fmt(n) { return n ? Number(n).toLocaleString('ru') : '0'; }
 
 // ════════════════════════════════════════════════════════
+//  УВЕДОМЛЕНИЯ
+// ════════════════════════════════════════════════════════
+async function loadNotifications() {
+  try {
+    const res = await api('GET', '/me/notifications');
+    const badge    = document.getElementById('bell-badge');
+    const dropdown = document.getElementById('notif-dropdown');
+    const list     = document.getElementById('notif-list');
+    const countLbl = document.getElementById('notif-count-label');
+
+    // Бейдж
+    if (res.count > 0) {
+      badge.textContent = res.count > 99 ? '99+' : res.count;
+      badge.classList.remove('hidden');
+      // Анимация покачивания
+      document.getElementById('btn-bell').style.animation = 'bellRing .5s ease 2';
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    // Контент дропдауна
+    countLbl.textContent = res.count > 0 ? `${res.count} ${t('notif_new')}` : '';
+    if (!res.payments.length) {
+      list.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
+    } else {
+      list.innerHTML = res.payments.map(p => `
+        <div class="notif-item">
+          <div class="notif-date">${formatDate(p['shift_date'])}</div>
+          <div class="notif-store">${p['магазин'] || '—'}</div>
+          <div class="notif-amt">+${fmt(p['выплата'])} ₽
+            <span style="font-size:12px;color:var(--gray-2);font-weight:400">
+              · ${p['часы'] ?? ''}ч
+            </span>
+          </div>
+        </div>`).join('');
+    }
+  } catch(e) { /* тихо игнорируем */ }
+}
+
+// Открытие/закрытие дропдауна
+document.getElementById('btn-bell').addEventListener('click', async () => {
+  const dropdown = document.getElementById('notif-dropdown');
+  const isOpen   = !dropdown.classList.contains('hidden');
+  dropdown.classList.toggle('hidden');
+
+  if (!isOpen) {
+    // Помечаем как прочитанные
+    try {
+      await api('POST', '/me/notifications/read');
+      document.getElementById('bell-badge').classList.add('hidden');
+    } catch(e) {}
+  }
+});
+
+// Закрываем при клике вне
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.bell-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('notif-dropdown').classList.add('hidden');
+  }
+});
+
+// ════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════
 applyLang();
-if (token) { showApp(); loadProfile(); }
+if (token) { showApp(); loadProfile(); loadNotifications(); }
 else        { showAuth(); }
 </script>
 </body>
