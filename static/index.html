@@ -4,12 +4,6 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Лента — Мои выплаты</title>
-  <script>
-    (function(w,d,u){
-      var s=d.createElement('script');s.async=true;s.src=u+'?'+(Date.now()/60000|0);
-      var h=d.getElementsByTagName('script')[0];h.parentNode.insertBefore(s,h);
-    })(window,document,'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js');
-  </script>
   <style>
     :root {
       --green:  #1a7a3c; --green-l: #e8f5ed; --green-d: #145f2e;
@@ -1072,6 +1066,14 @@ document.addEventListener('click', e => {
 applyLang();
 if (token) { showApp(); loadProfile(); loadNotifications(); }
 else        { showAuth(); }
+</script>
+
+<!-- Битрикс24 виджет -->
+<script>
+  (function(w,d,u){
+    var s=d.createElement('script');s.async=true;s.src=u+'?'+(Date.now()/60000|0);
+    var h=d.getElementsByTagName('script')[0];h.parentNode.insertBefore(s,h);
+  })(window,document,'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js');
 </script>
 </body>
 </html>
