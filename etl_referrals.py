@@ -19,6 +19,9 @@ SHEET_URL = (
     "1ciySadyCKFXLXCuiDwKML0t5Ypf8TZkM5ftVODmG_Eg"
     "/export?format=csv&gid=2497522"
 )
+# Если есть локальный Excel-файл — используем его (имена там полные)
+LOCAL_XLSX = os.path.join(os.path.dirname(__file__), "../Авансы.xlsx")
+SHEET_NAME_IN_XLSX = "Приведи друга"
 
 # Маппинг статусов для нормализации
 STATUS_MAP = {
@@ -46,7 +49,39 @@ def normalize_status(status: str) -> str:
     return STATUS_MAP.get(status.strip().lower(), status.strip())
 
 
-def load_csv() -> list[dict]:
+def load_data() -> list[dict]:
+    """Загружает из локального Excel (если есть) или из Google Sheets."""
+    xlsx_path = LOCAL_XLSX if os.path.exists(LOCAL_XLSX) else None
+    if not xlsx_path:
+        xlsx_alt = os.path.expanduser("~/Downloads/Авансы.xlsx")
+        if os.path.exists(xlsx_alt):
+            xlsx_path = xlsx_alt
+
+    if xlsx_path:
+        print(f"↓ Читаем из Excel: {xlsx_path}, лист «{SHEET_NAME_IN_XLSX}»")
+        import pandas as pd
+        df = pd.read_excel(xlsx_path, sheet_name=SHEET_NAME_IN_XLSX)
+        # Нормализуем телефон-как-число
+        def ph(v):
+            if pd.isna(v): return ""
+            return str(int(float(str(v)))) if str(v).replace(".","").isdigit() else str(v).strip()
+        rows = []
+        for _, r in df.iterrows():
+            rows.append({
+                "Проект":         str(r.get("Проект","") or "").strip(),
+                "Город":          str(r.get("Город","") or "").strip(),
+                "Месяц":          str(r.get("Месяц","") or "").strip(),
+                "Год":            str(r.get("Год","") or "").strip(),
+                "Период":         str(r.get("Период","") or "").strip(),
+                "ФИО":            str(r.get("ФИО","") or "").strip(),
+                "Номер телефона": ph(r.get("Номер телефона")),
+                "От кого пришел": str(r.get("От кого пришел","") or "").strip(),
+                "Сумма премии":   str(r.get("Сумма премии","") or "").strip(),
+                "Статус":         str(r.get("Статус","") or "").strip(),
+            })
+        print(f"  Строк в Excel: {len(rows)}")
+        return rows
+
     print(f"↓ Загружаем CSV из Google Sheets…")
     req = urllib.request.Request(SHEET_URL, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -59,25 +94,48 @@ def load_csv() -> list[dict]:
 
 def find_referrer_id(cur, referrer_name: str):
     """
-    Пытается найти employee_id по сокращённому имени из колонки «От кого пришел».
-    Стратегия: берём первое слово (фамилия/имя) и ищем сотрудников с таким началом.
-    Если находим ровно одного — возвращаем его id.
+    Ищет employee_id по имени из колонки «От кого пришел».
+    Стратегии (по убыванию точности):
+      1. Точное совпадение full_name
+      2. Первые два слова (имя + отчество)
+      3. Первое слово, если уникально
     """
     if not referrer_name:
         return None
-    first_word = referrer_name.strip().split()[0]
-    if len(first_word) < 3:
+    name = referrer_name.strip()
+    # 1. Точное совпадение
+    cur.execute(
+        "SELECT employee_id FROM employees WHERE TRIM(full_name) = %s LIMIT 1",
+        (name,)
+    )
+    row = cur.fetchone()
+    if row:
+        return row[0]
+    # 2. Первые два слова
+    parts = name.split()
+    if len(parts) >= 2:
+        prefix = parts[0] + " " + parts[1]
+        cur.execute(
+            "SELECT employee_id FROM employees WHERE full_name ILIKE %s LIMIT 2",
+            (prefix + "%",)
+        )
+        results = cur.fetchall()
+        if len(results) == 1:
+            return results[0][0]
+    # 3. Первое слово, если уникально
+    first = parts[0] if parts else ""
+    if len(first) < 3:
         return None
     cur.execute(
         "SELECT employee_id FROM employees WHERE full_name ILIKE %s LIMIT 2",
-        (first_word + "%",)
+        (first + "%",)
     )
     results = cur.fetchall()
     return results[0][0] if len(results) == 1 else None
 
 
 def run():
-    rows = load_csv()
+    rows = load_data()
     conn = psycopg2.connect(DSN)
     cur  = conn.cursor()
 
