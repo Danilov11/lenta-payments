@@ -107,6 +107,8 @@ def init_db():
         employee_id  INTEGER REFERENCES employees(employee_id),
         advance_date DATE NOT NULL,
         amount       NUMERIC(10,2) NOT NULL,
+        balance      NUMERIC(10,2),
+        project      VARCHAR(200),
         note         TEXT,
         created_at   TIMESTAMP DEFAULT NOW()
     );
@@ -366,20 +368,24 @@ def get_my_advances(employee_id: int = Depends(get_current_employee_id)):
     with get_db() as conn:
         rows = fetchall(conn, """
             SELECT
-                advance_id,
                 advance_date AS дата,
+                project      AS проект,
                 amount       AS сумма,
+                balance      AS остаток,
                 note         AS примечание
             FROM advances
             WHERE employee_id = %s
             ORDER BY advance_date DESC
         """, (employee_id,))
-        total = fetchone(conn, """
-            SELECT COALESCE(SUM(amount), 0) AS итого
+        totals = fetchone(conn, """
+            SELECT
+                COALESCE(SUM(amount), 0)                                   AS сумма_всего,
+                COALESCE(SUM(CASE WHEN balance > 0 THEN balance END), 0)   AS остаток_всего
             FROM advances WHERE employee_id = %s
         """, (employee_id,))
     return {
-        "total_amount": float(total["итого"]),
+        "total_amount":   float(totals["сумма_всего"]),
+        "total_balance":  float(totals["остаток_всего"]),
         "advances": [dict(r) for r in rows]
     }
 
