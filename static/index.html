@@ -622,6 +622,7 @@ function setLang(l) {
     if (window._summaryCache)   renderSummary(window._summaryCache);
     if (window._advancesCache)  renderAdvances(window._advancesCache);
     if (window._referralsCache) renderReferrals(window._referralsCache);
+    if (window._notifCache)     renderNotifications(window._notifCache);
   }
 }
 
@@ -707,8 +708,9 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   window._profileCache  = null;
   window._shiftsCache   = null;
   window._summaryCache  = null;
-  window._advancesCache = null;
+  window._advancesCache  = null;
   window._referralsCache = null;
+  window._notifCache     = null;
   document.getElementById('profile-grid').innerHTML = '<div class="spinner"></div>';
   showAuth();
 });
@@ -1002,40 +1004,42 @@ function fmt(n) { return n ? Number(n).toLocaleString('ru') : '0'; }
 // ════════════════════════════════════════════════════════
 //  УВЕДОМЛЕНИЯ
 // ════════════════════════════════════════════════════════
+function renderNotifications(res) {
+  if (!res) return;
+  const badge    = document.getElementById('bell-badge');
+  const list     = document.getElementById('notif-list');
+  const countLbl = document.getElementById('notif-count-label');
+
+  if (res.count > 0) {
+    badge.textContent = res.count > 99 ? '99+' : res.count;
+    badge.classList.remove('hidden');
+    document.getElementById('btn-bell').style.animation = 'bellRing .5s ease 2';
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  countLbl.textContent = res.count > 0 ? `${res.count} ${t('notif_new')}` : '';
+  if (!res.payments.length) {
+    list.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
+  } else {
+    list.innerHTML = res.payments.map(p => `
+      <div class="notif-item">
+        <div class="notif-date">${formatDate(p['shift_date'])}</div>
+        <div class="notif-store">${p['магазин'] || '—'}</div>
+        <div class="notif-amt">+${fmt(p['выплата'])} ₽
+          <span style="font-size:12px;color:var(--gray-2);font-weight:400">
+            · ${p['часы'] ?? ''}ч
+          </span>
+        </div>
+      </div>`).join('');
+  }
+}
+
 async function loadNotifications() {
   try {
     const res = await api('GET', '/me/notifications');
-    const badge    = document.getElementById('bell-badge');
-    const dropdown = document.getElementById('notif-dropdown');
-    const list     = document.getElementById('notif-list');
-    const countLbl = document.getElementById('notif-count-label');
-
-    // Бейдж
-    if (res.count > 0) {
-      badge.textContent = res.count > 99 ? '99+' : res.count;
-      badge.classList.remove('hidden');
-      // Анимация покачивания
-      document.getElementById('btn-bell').style.animation = 'bellRing .5s ease 2';
-    } else {
-      badge.classList.add('hidden');
-    }
-
-    // Контент дропдауна
-    countLbl.textContent = res.count > 0 ? `${res.count} ${t('notif_new')}` : '';
-    if (!res.payments.length) {
-      list.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
-    } else {
-      list.innerHTML = res.payments.map(p => `
-        <div class="notif-item">
-          <div class="notif-date">${formatDate(p['shift_date'])}</div>
-          <div class="notif-store">${p['магазин'] || '—'}</div>
-          <div class="notif-amt">+${fmt(p['выплата'])} ₽
-            <span style="font-size:12px;color:var(--gray-2);font-weight:400">
-              · ${p['часы'] ?? ''}ч
-            </span>
-          </div>
-        </div>`).join('');
-    }
+    window._notifCache = res;
+    renderNotifications(res);
   } catch(e) { /* тихо игнорируем */ }
 }
 
