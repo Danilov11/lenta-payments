@@ -3,15 +3,17 @@ Lenta Payments API
 Сотрудник входит по номеру телефона и видит свои смены и выплаты.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 import re
 import os
+from collections import defaultdict
+import threading
 
 from database import get_db, fetchone, fetchall, execute, DSN
 from auth import create_access_token, get_current_employee_id
@@ -162,6 +164,26 @@ def root():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
+# ─── Rate limiting ────────────────────────────────────────────────────────────
+
+_rate_lock    = threading.Lock()
+_login_attempts: dict = defaultdict(list)   # ip → [timestamp, ...]
+RATE_LIMIT    = 10    # попыток
+RATE_WINDOW   = 60    # секунд
+
+def check_rate_limit(ip: str):
+    now = datetime.utcnow().timestamp()
+    with _rate_lock:
+        attempts = [t for t in _login_attempts[ip] if now - t < RATE_WINDOW]
+        attempts.append(now)
+        _login_attempts[ip] = attempts
+    if len(attempts) > RATE_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail="Слишком много попыток. Подождите минуту."
+        )
+
+
 # ─── Утилиты ──────────────────────────────────────────────────────────────────
 
 def normalize_phone(phone: str) -> str:
@@ -184,7 +206,8 @@ class TokenResponse(BaseModel):
 # ─── Аутентификация ───────────────────────────────────────────────────────────
 
 @app.post("/auth/login", response_model=TokenResponse, summary="Войти по номеру телефона")
-def login(body: LoginRequest):
+def login(body: LoginRequest, request: Request):
+    check_rate_limit(request.client.host)
     phone = normalize_phone(body.phone)
     with get_db() as conn:
         emp = fetchone(conn,
