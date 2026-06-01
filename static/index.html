@@ -155,8 +155,9 @@
     .profile-item .val  { font-size: 15px; font-weight: 500; }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
              font-size: 12px; font-weight: 600; }
-    .badge-green { background: var(--green-l); color: var(--green); }
-    .badge-gray  { background: var(--gray-1);  color: var(--gray-3); }
+    .badge-green    { background: var(--green-l); color: var(--green); }
+    .badge-gray     { background: var(--gray-1);  color: var(--gray-3); }
+    .badge-orange   { background: #fff3e0; color: #e65c00; }
 
     /* ── Summary stats ── */
     .summary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
@@ -383,6 +384,7 @@ const I18N = {
     col_shifts2:       'Смен',
     col_payment2:      'Выплата',
     no_shifts:         'Смен за этот период не найдено',
+    badge_unplanned:   'Без плана',
     no_data:           'Нет данных',
     err_not_found:     'Сотрудник с таким номером не найден',
     total_label:       'Найдено смен',
@@ -444,6 +446,7 @@ const I18N = {
     col_shifts2:       'Навбат',
     col_payment2:      'Пардохт',
     no_shifts:         'Барои ин давра навбат ёфт нашуд',
+    badge_unplanned:   'Бидуни нақша',
     no_data:           'Маълумот нест',
     err_not_found:     'Кормандеро бо ин рақам ёфтан мумкин нест',
     total_label:       'Навбатҳо ёфт шуданд',
@@ -505,6 +508,7 @@ const I18N = {
     col_shifts2:       'Smena',
     col_payment2:      'To\'lov',
     no_shifts:         'Bu davr uchun smenalar topilmadi',
+    badge_unplanned:   'Rejalashtirilmagan',
     no_data:           'Ma\'lumot yo\'q',
     err_not_found:     'Bunday raqamli xodim topilmadi',
     total_label:       'Smenalar topildi',
@@ -566,6 +570,7 @@ const I18N = {
     col_shifts2:       'Смена',
     col_payment2:      'Төлөм',
     no_shifts:         'Бул мезгил үчүн сменалар табылган жок',
+    badge_unplanned:   'Пландан тышкары',
     no_data:           'Маалымат жок',
     err_not_found:     'Бул номерде кызматкер табылган жок',
     total_label:       'Сменалар табылды',
@@ -906,15 +911,21 @@ function renderShifts(res) {
         </tr>
       </thead>
       <tbody>
-        ${res.shifts.map(s => `
-          <tr>
-            <td>${formatDate(s['shift_date'])}</td>
+        ${res.shifts.map(s => {
+          const unplanned = s['тип_смены'] === 'Смена без плана';
+          return `
+          <tr${unplanned ? ' style="background:#fff8f0"' : ''}>
+            <td>
+              ${formatDate(s['shift_date'])}
+              ${unplanned ? `<br><span class="badge badge-orange" style="margin-top:3px;display:inline-block">${t('badge_unplanned')}</span>` : ''}
+            </td>
             <td>${s['магазин'] || '—'}</td>
             <td style="max-width:180px;font-size:12px">${s['услуга'] || '—'}</td>
             <td>${s['часы_оплата'] ?? '—'}</td>
             <td>${s['тариф'] ? s['тариф'] + ' ₽' : '—'}</td>
             <td class="amt">${s['выплата'] ? fmt(s['выплата']) + ' ₽' : '—'}</td>
-          </tr>`).join('')}
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>`;
 }
