@@ -232,8 +232,10 @@ def get_my_shifts(
                 st.store_name   AS магазин,
                 c.city_name     AS город,
                 st.format       AS формат,
-                sv.service_name AS услуга,
-                s.shift_type    AS тип_смены,
+                sv.service_name    AS услуга,
+                s.shift_type       AS тип_смены,
+                s.status_customer  AS статус_заказчика,
+                s.status_contractor AS статус_исполнителя,
                 s.planned_start AS начало_план,
                 s.planned_end   AS конец_план,
                 s.actual_start  AS начало_факт,
@@ -368,11 +370,12 @@ def get_my_advances(employee_id: int = Depends(get_current_employee_id)):
     with get_db() as conn:
         rows = fetchall(conn, """
             SELECT
-                advance_date AS дата,
-                project      AS проект,
-                amount       AS сумма,
-                balance      AS остаток,
-                note         AS примечание
+                advance_date  AS дата,
+                project       AS проект,
+                amount        AS сумма,
+                balance       AS остаток,
+                note          AS примечание,
+                manager_note  AS комментарий_менеджера
             FROM advances
             WHERE employee_id = %s
             ORDER BY advance_date DESC

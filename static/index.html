@@ -158,6 +158,12 @@
     .badge-green    { background: var(--green-l); color: var(--green); }
     .badge-gray     { background: var(--gray-1);  color: var(--gray-3); }
     .badge-orange   { background: #fff3e0; color: #e65c00; }
+    .warn-banner {
+      background: #fff3e0; border-left: 4px solid #e65c00;
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 13px; color: #7a3600; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
 
     /* ── Summary stats ── */
     .summary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
@@ -369,6 +375,8 @@ const I18N = {
     lbl_adv_note:      'Примечание',
     lbl_adv_empty:     'Авансов нет',
     lbl_adv_total:     'Итого авансов',
+    lbl_adv_manager:   'Комментарий менеджера',
+    warn_no_shift:     'У вас не проставлена смена — обратитесь к руководителю магазина/склада',
     col_date:          'Дата',
     col_store:         'Магазин',
     col_service:       'Услуга',
@@ -431,6 +439,8 @@ const I18N = {
     lbl_adv_note:      'Шарҳ',
     lbl_adv_empty:     'Пешпардохт нест',
     lbl_adv_total:     'Ҷамъи пешпардохтҳо',
+    lbl_adv_manager:   'Шарҳи менеҷер',
+    warn_no_shift:     'Навбати шумо гузошта нашудааст — ба роҳбари мағоза/анбор муроҷиат кунед',
     col_date:          'Сана',
     col_store:         'Мағоза',
     col_service:       'Хизмат',
@@ -493,6 +503,8 @@ const I18N = {
     lbl_adv_note:      'Izoh',
     lbl_adv_empty:     'Avans yo\'q',
     lbl_adv_total:     'Jami avanslar',
+    lbl_adv_manager:   'Menejer izohi',
+    warn_no_shift:     'Sizning smenangiz belgilanmagan — do\'kon/ombor rahbariga murojaat qiling',
     col_date:          'Sana',
     col_store:         'Do\'kon',
     col_service:       'Xizmat',
@@ -555,6 +567,8 @@ const I18N = {
     lbl_adv_note:      'Эскертме',
     lbl_adv_empty:     'Аванс жок',
     lbl_adv_total:     'Жалпы аванстар',
+    lbl_adv_manager:   'Менеджердин комментарийи',
+    warn_no_shift:     'Сиздин сменаңыз коюлган жок — дүкөн/кампа жетекчисине кайрылыңыз',
     col_date:          'Күн',
     col_store:         'Дүкөн',
     col_service:       'Кызмат',
@@ -787,6 +801,7 @@ function renderAdvances(res) {
           <th>${t('lbl_adv_date')}</th>
           <th>${t('lbl_adv_amount')}</th>
           <th>${t('lbl_adv_total')}</th>
+          <th>${t('lbl_adv_manager')}</th>
           <th>${t('lbl_adv_note')}</th>
         </tr>
       </thead>
@@ -794,8 +809,9 @@ function renderAdvances(res) {
         ${active.map(a => `
           <tr>
             <td>${formatDate(a['дата'])}</td>
-            <td style="font-weight:600">−${fmt(a['сумма'])} ₽</td>
-            <td style="color:var(--red);font-weight:600">−${fmt(a['остаток'])} ₽</td>
+            <td style="font-weight:600;color:var(--red)">${fmt(a['сумма'])} ₽</td>
+            <td style="font-weight:600;color:var(--red)">${fmt(a['остаток'])} ₽</td>
+            <td style="font-size:12px;color:var(--text)">${a['комментарий_менеджера'] || '—'}</td>
             <td style="font-size:12px;color:var(--gray-3)">${a['примечание'] || (a['проект'] || '—')}</td>
           </tr>`).join('')}
       </tbody>
@@ -893,8 +909,13 @@ function renderShifts(res) {
   if (!res || !res.shifts.length) {
     cont.innerHTML = `<div class="no-data">${t('no_shifts')}</div>`; return;
   }
+  // Смены без проставленного статуса
+  const unregistered = res.shifts.filter(s => !s['статус_заказчика'] && !s['статус_исполнителя']);
+  const warnHtml = unregistered.length > 0
+    ? `<div class="warn-banner">⚠️ ${t('warn_no_shift')}</div>`
+    : '';
   const total = res.shifts.reduce((s,r) => s + (Number(r['выплата'])||0), 0);
-  cont.innerHTML = `
+  cont.innerHTML = warnHtml + `
     <div style="font-size:13px;color:var(--gray-3);margin-bottom:12px">
       ${t('total_label')}: <b>${res.total}</b>
       &nbsp;·&nbsp; ${t('total_sum')}: <b class="amt">${fmt(total)} ₽</b>
