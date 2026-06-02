@@ -362,6 +362,7 @@ const I18N = {
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Гражданство',
     lbl_payment_freq:  'Выплаты',
+    btn_manager:       'Написать менеджеру',
     lbl_referrals:     'Программа «Приведи друга»',
     lbl_ref_referred:  'Привлечённый',
     lbl_ref_period:    'Период',
@@ -426,6 +427,7 @@ const I18N = {
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Шаҳрвандӣ',
     lbl_payment_freq:  'Пардохт',
+    btn_manager:       'Ба менеҷер нависед',
     lbl_referrals:     'Барнома «Дӯст биёр»',
     lbl_ref_referred:  'Овардашуда',
     lbl_ref_period:    'Давра',
@@ -490,6 +492,7 @@ const I18N = {
     lbl_inn:           'INN',
     lbl_citizenship:   'Fuqarolik',
     lbl_payment_freq:  'To\'lovlar',
+    btn_manager:       'Menejerga yozing',
     lbl_referrals:     '«Do\'st olib kel» dasturi',
     lbl_ref_referred:  'Jalb qilingan',
     lbl_ref_period:    'Davr',
@@ -554,6 +557,7 @@ const I18N = {
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Жарандык',
     lbl_payment_freq:  'Төлөмдөр',
+    btn_manager:       'Менеджерге жазыңыз',
     lbl_referrals:     '«Дос алып кел» программасы',
     lbl_ref_referred:  'Тартылган',
     lbl_ref_period:    'Мезгил',
@@ -768,7 +772,31 @@ function renderProfile(emp) {
       <label>${t('lbl_citizenship')}</label>
       <div class="val">${emp.citizenship || '—'}</div>
     </div>
+    <div class="profile-item" style="grid-column:1/-1;margin-top:4px">
+      <button onclick="openBitrix()" class="btn btn-primary" style="width:auto;padding:10px 24px;font-size:14px">
+        💬 ${t('btn_manager')}
+      </button>
+    </div>
   `;
+}
+
+function openBitrix() {
+  // Bitrix24 widget API
+  if (window.BX && window.BX.SiteButton) {
+    window.BX.SiteButton.show(); return;
+  }
+  if (window.b24Tracker) {
+    try { window.b24Tracker.openMessenger(); return; } catch(e) {}
+  }
+  // Fallback: найти кнопку виджета и кликнуть
+  var btn = document.querySelector('[id^="bx-button-wrap"]')
+         || document.querySelector('.bx-livechat-btn')
+         || document.querySelector('[class*="b24-widget-button"]');
+  if (btn) { btn.click(); return; }
+  // Последний fallback: найти любой элемент Bitrix24
+  var el = document.querySelector('[data-b24-crm-button-widget]')
+        || document.querySelector('div[id^="b24-crm-button"]');
+  if (el) el.click();
 }
 
 // ════════════════════════════════════════════════════════
