@@ -781,22 +781,20 @@ function renderProfile(emp) {
 }
 
 function openBitrix() {
-  // Bitrix24 widget API
-  if (window.BX && window.BX.SiteButton) {
-    window.BX.SiteButton.show(); return;
+  var el = document.querySelector('.b24-widget-button-block')
+        || document.querySelector('.b24-widget-button-inner-container')
+        || document.querySelector('.b24-widget-button-wrapper')
+        || document.querySelector('[class*="b24-widget-button"]');
+  if (el) {
+    el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+    return;
   }
-  if (window.b24Tracker) {
-    try { window.b24Tracker.openMessenger(); return; } catch(e) {}
-  }
-  // Fallback: найти кнопку виджета и кликнуть
-  var btn = document.querySelector('[id^="bx-button-wrap"]')
-         || document.querySelector('.bx-livechat-btn')
-         || document.querySelector('[class*="b24-widget-button"]');
-  if (btn) { btn.click(); return; }
-  // Последний fallback: найти любой элемент Bitrix24
-  var el = document.querySelector('[data-b24-crm-button-widget]')
-        || document.querySelector('div[id^="b24-crm-button"]');
-  if (el) el.click();
+  // Виджет ещё не загрузился — подождать и повторить
+  setTimeout(function() {
+    var el2 = document.querySelector('.b24-widget-button-block')
+           || document.querySelector('[class*="b24-widget-button"]');
+    if (el2) el2.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+  }, 1000);
 }
 
 // ════════════════════════════════════════════════════════
