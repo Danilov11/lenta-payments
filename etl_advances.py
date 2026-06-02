@@ -120,6 +120,7 @@ def load_standard_sheet(sheet_name: str, df: pd.DataFrame) -> list[dict]:
             "amount": amount,
             "balance": balance,
             "note": note,
+            "manager_note": note,  # «Комментарий» из Excel → колонка менеджера
             "source": sheet_name,
         })
     return records
@@ -215,10 +216,11 @@ def run():
         matched += 1
         cur.execute("""
             INSERT INTO advances
-                (employee_id, advance_date, amount, balance, project, note)
-            VALUES (%s, %s, %s, %s, %s, %s)
+                (employee_id, advance_date, amount, balance, project, note, manager_note)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (emp_id, rec["advance_date"], rec["amount"],
-              rec["balance"], rec["project"], rec["note"]))
+              rec["balance"], rec["project"], rec["note"],
+              rec.get("manager_note")))
         inserted += 1
 
     conn.commit()
