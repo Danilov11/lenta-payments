@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Лента — Панель менеджера</title>
+  <style>
+    :root {
+      --green: #1a7a3c; --green-l: #e8f5ed; --green-d: #145f2e;
+      --gray-0: #f5f6f8; --gray-1: #e9ebed; --gray-2: #b0b7bf;
+      --gray-3: #6b7480; --text: #1a1d23; --red: #d63b3b;
+      --radius: 12px; --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--gray-0); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: var(--green); color: #fff; padding: 0 20px;
+      height: 56px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .logo { font-size: 18px; font-weight: 700; }
+    .logo span { opacity: .7; font-size: 13px; font-weight: 400; margin-left: 8px; }
+    #btn-logout-admin {
+      background: rgba(255,255,255,.15); border: none; color: #fff;
+      padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    }
+
+    main { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+
+    .card {
+      background: #fff; border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .7px; color: var(--gray-3); margin-bottom: 16px;
+    }
+
+    /* Auth */
+    #screen-login {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px;
+    }
+    .login-box {
+      background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 36px 32px; width: 100%; max-width: 360px;
+    }
+    .login-box h2 { font-size: 22px; margin-bottom: 6px; color: var(--green); }
+    .login-box p  { font-size: 14px; color: var(--gray-3); margin-bottom: 24px; }
+
+    label { font-size: 13px; font-weight: 600; color: var(--gray-3); display: block; margin-bottom: 6px; }
+    input, textarea {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--gray-1);
+      border-radius: 8px; font-size: 15px; outline: none;
+      transition: border-color .2s; font-family: inherit;
+    }
+    input:focus, textarea:focus { border-color: var(--green); }
+    textarea { resize: vertical; min-height: 72px; }
+    .input-group { margin-bottom: 14px; }
+
+    .btn {
+      padding: 11px 22px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: var(--green-d); }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .btn-ghost { background: var(--gray-1); color: var(--gray-3); }
+    .btn-ghost:hover { background: var(--gray-2); color: #fff; }
+
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 8px; min-height: 18px; }
+
+    /* Search */
+    .search-row { display: flex; gap: 10px; }
+    .search-row input { flex: 1; }
+    .search-row .btn { flex-shrink: 0; }
+
+    /* Employee info */
+    .emp-info {
+      background: var(--green-l); border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    }
+    .emp-name  { font-size: 17px; font-weight: 700; }
+    .emp-phone { font-size: 13px; color: var(--gray-3); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      background: var(--gray-0); color: var(--gray-3); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; padding: 9px 12px; text-align: left; white-space: nowrap;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--gray-1); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .amt { font-weight: 600; color: var(--green); }
+    .amt-red { font-weight: 600; color: var(--red); }
+    .no-data { text-align: center; padding: 28px; color: var(--gray-2); font-size: 14px; }
+
+    /* Inline edit */
+    .note-cell { min-width: 180px; }
+    .note-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+    .note-empty { font-size: 13px; color: var(--gray-2); font-style: italic; }
+    .edit-area  { width: 100%; font-size: 13px; min-height: 60px; padding: 6px 8px; }
+    .edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+
+    /* New advance form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: var(--green-l); color: var(--green); }
+
+    .spinner {
+      width: 20px; height: 20px; border: 3px solid var(--gray-1);
+      border-top-color: var(--green); border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-box">
+    <h2>Лента</h2>
+    <p>Панель менеджера</p>
+    <div class="input-group">
+      <label>Пароль</label>
+      <input type="password" id="inp-password" placeholder="Введите пароль"/>
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-login-admin">Войти</button>
+    <div class="error-msg" id="err-login"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="hidden">
+  <header>
+    <div class="logo">Лента <span>Панель менеджера</span></div>
+    <button id="btn-logout-admin">Выйти</button>
+  </header>
+
+  <main>
+    <!-- Поиск сотрудника -->
+    <div class="card">
+      <div class="card-title">Поиск сотрудника</div>
+      <div class="search-row">
+        <input type="text" id="inp-search" placeholder="Номер телефона или ФИО"/>
+        <button class="btn btn-primary" id="btn-search">Найти</button>
+      </div>
+      <div class="error-msg" id="err-search"></div>
+    </div>
+
+    <!-- Результат -->
+    <div id="result-section" class="hidden">
+
+      <!-- Информация о сотруднике -->
+      <div class="emp-info" id="emp-info"></div>
+
+      <!-- Авансы -->
+      <div class="card">
+        <div class="card-title">Авансы и выплаты</div>
+        <div class="table-wrap" id="advances-table"></div>
+      </div>
+
+      <!-- Добавить аванс -->
+      <div class="card">
+        <div class="card-title">Добавить аванс</div>
+        <div class="form-grid">
+          <div class="input-group">
+            <label>Дата</label>
+            <input type="date" id="new-date"/>
+          </div>
+          <div class="input-group">
+            <label>Проект</label>
+            <input type="text" id="new-project" placeholder="Лента РЦ"/>
+          </div>
+          <div class="input-group">
+            <label>Сумма</label>
+            <input type="number" id="new-amount" placeholder="5000"/>
+          </div>
+          <div class="input-group">
+            <label>Остаток</label>
+            <input type="number" id="new-balance" placeholder="5000"/>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Комментарий менеджера</label>
+          <textarea id="new-manager-note" placeholder="За период 01-15.03, удержание с выплаты…"></textarea>
+        </div>
+        <div class="input-group">
+          <label>Примечание</label>
+          <input type="text" id="new-note" placeholder="необязательно"/>
+        </div>
+        <button class="btn btn-primary" id="btn-add-advance">Добавить</button>
+        <div class="error-msg" id="err-add"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const API_BASE = window.location.hostname === 'danilov11.github.io'
+  ? 'https://web-production-5bed4.up.railway.app'
+  : '';
+
+let adminKey  = sessionStorage.getItem('admin_key') || '';
+let currentEmp = null;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function adminApi(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res  = await fetch(API_BASE + path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Ошибка');
+  return data;
+}
+
+document.getElementById('btn-login-admin').addEventListener('click', async () => {
+  const pwd = document.getElementById('inp-password').value.trim();
+  const err = document.getElementById('err-login');
+  err.textContent = '';
+  if (!pwd) return;
+  adminKey = pwd;
+  try {
+    await adminApi('POST', '/admin/login', { password: pwd });
+    sessionStorage.setItem('admin_key', pwd);
+    showApp();
+  } catch(e) {
+    err.textContent = 'Неверный пароль';
+    adminKey = '';
+  }
+});
+
+document.getElementById('inp-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-login-admin').click();
+});
+
+document.getElementById('btn-logout-admin').addEventListener('click', () => {
+  sessionStorage.removeItem('admin_key');
+  adminKey = '';
+  showLogin();
+});
+
+function showLogin() {
+  document.getElementById('screen-login').classList.remove('hidden');
+  document.getElementById('screen-app').classList.add('hidden');
+}
+function showApp() {
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-app').classList.remove('hidden');
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+document.getElementById('btn-search').addEventListener('click', searchEmployee);
+document.getElementById('inp-search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchEmployee();
+});
+
+async function searchEmployee() {
+  const q   = document.getElementById('inp-search').value.trim();
+  const err = document.getElementById('err-search');
+  err.textContent = '';
+  if (!q) return;
+  try {
+    const emp = await adminApi('GET', '/admin/search?q=' + encodeURIComponent(q));
+    currentEmp = emp;
+    renderEmpInfo(emp);
+    loadAdvances(emp.employee_id);
+    document.getElementById('result-section').classList.remove('hidden');
+    // Ставим сегодня по умолчанию
+    document.getElementById('new-date').value = new Date().toISOString().slice(0,10);
+  } catch(e) {
+    err.textContent = e.message;
+    document.getElementById('result-section').classList.add('hidden');
+  }
+}
+
+function renderEmpInfo(emp) {
+  document.getElementById('emp-info').innerHTML = `
+    <div>
+      <div class="emp-name">${emp.full_name}</div>
+      <div class="emp-phone">${emp.phone || '—'}</div>
+    </div>
+    <span class="badge badge-green">ID ${emp.employee_id}</span>`;
+}
+
+// ── Advances ──────────────────────────────────────────────────────────────────
+async function loadAdvances(empId) {
+  const cont = document.getElementById('advances-table');
+  cont.innerHTML = '<div class="spinner"></div>';
+  try {
+    const res = await adminApi('GET', `/admin/employee/${empId}/advances`);
+    renderAdvancesTable(res.advances);
+  } catch(e) {
+    cont.innerHTML = `<div class="no-data" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function fmt(n) { return n != null ? Number(n).toLocaleString('ru') : '—'; }
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s + 'T00:00:00').toLocaleDateString('ru', {day:'2-digit',month:'short',year:'numeric'});
+}
+
+function renderAdvancesTable(advances) {
+  const cont = document.getElementById('advances-table');
+  if (!advances.length) {
+    cont.innerHTML = '<div class="no-data">Авансов нет</div>'; return;
+  }
+  cont.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Проект</th>
+          <th>Сумма</th>
+          <th>Остаток</th>
+          <th>Комментарий менеджера</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${advances.map(a => `
+          <tr id="adv-row-${a.advance_id}">
+            <td style="white-space:nowrap">${fmtDate(a['дата'])}</td>
+            <td style="font-size:12px;color:var(--gray-3)">${a['проект'] || '—'}</td>
+            <td class="amt-red">${fmt(a['сумма'])} ₽</td>
+            <td class="${Number(a['остаток']) > 0 ? 'amt-red' : ''}">${fmt(a['остаток'])} ₽</td>
+            <td class="note-cell" id="note-cell-${a.advance_id}">
+              ${renderNoteCell(a)}
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderNoteCell(a) {
+  const note = a['комментарий_менеджера'];
+  return `
+    <div id="note-view-${a.advance_id}">
+      ${note
+        ? `<div class="note-text">${escHtml(note)}</div>`
+        : `<span class="note-empty">нет комментария</span>`}
+      <button class="btn btn-sm btn-ghost" style="margin-top:6px"
+              onclick="startEdit(${a.advance_id}, ${JSON.stringify(note || '')})">
+        ✏️ Изменить
+      </button>
+    </div>`;
+}
+
+function startEdit(id, current) {
+  const cell = document.getElementById(`note-cell-${id}`);
+  cell.innerHTML = `
+    <textarea class="edit-area" id="edit-ta-${id}">${escHtml(current)}</textarea>
+    <div class="edit-actions">
+      <button class="btn btn-sm btn-primary" onclick="saveNote(${id})">Сохранить</button>
+      <button class="btn btn-sm btn-ghost"   onclick="cancelEdit(${id}, ${JSON.stringify(current)})">Отмена</button>
+    </div>`;
+  document.getElementById(`edit-ta-${id}`).focus();
+}
+
+async function saveNote(id) {
+  const val = document.getElementById(`edit-ta-${id}`).value.trim();
+  try {
+    await adminApi('PATCH', `/admin/advance/${id}`, { manager_note: val });
+    const cell = document.getElementById(`note-cell-${id}`);
+    cell.innerHTML = renderNoteCell({ advance_id: id, 'комментарий_менеджера': val });
+  } catch(e) { alert('Ошибка: ' + e.message); }
+}
+
+function cancelEdit(id, original) {
+  const cell = document.getElementById(`note-cell-${id}`);
+  cell.innerHTML = renderNoteCell({ advance_id: id, 'комментарий_менеджера': original });
+}
+
+// ── Add advance ───────────────────────────────────────────────────────────────
+document.getElementById('btn-add-advance').addEventListener('click', async () => {
+  const err = document.getElementById('err-add');
+  err.textContent = '';
+  if (!currentEmp) return;
+  const d = {
+    employee_id:  currentEmp.employee_id,
+    advance_date: document.getElementById('new-date').value,
+    amount:       parseFloat(document.getElementById('new-amount').value) || 0,
+    balance:      parseFloat(document.getElementById('new-balance').value) || 0,
+    project:      document.getElementById('new-project').value.trim() || null,
+    note:         document.getElementById('new-note').value.trim()    || null,
+    manager_note: document.getElementById('new-manager-note').value.trim() || null,
+  };
+  if (!d.advance_date || !d.amount) { err.textContent = 'Укажите дату и сумму'; return; }
+  try {
+    await adminApi('POST', '/admin/advance', d);
+    // Очищаем форму
+    ['new-amount','new-balance','new-note','new-manager-note','new-project'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    loadAdvances(currentEmp.employee_id);
+  } catch(e) { err.textContent = e.message; }
+});
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+if (adminKey) {
+  adminApi('POST', '/admin/login', { password: adminKey })
+    .then(() => showApp())
+    .catch(() => { sessionStorage.removeItem('admin_key'); adminKey = ''; });
+}
+</script>
+</body>
+</html>

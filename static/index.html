@@ -754,6 +754,7 @@ async function loadProfile() {
     const emp = await api('GET', '/me');
     window._profileCache = emp;
     renderProfile(emp);
+    setBitrixUser(emp);
   } catch(e) {
     if (e.message.includes('401')) { token = null; localStorage.removeItem('lenta_token'); showAuth(); }
     return;
@@ -794,21 +795,35 @@ function renderProfile(emp) {
   `;
 }
 
+// Передаём данные сотрудника в Bitrix24 при загрузке профиля
+function setBitrixUser(emp) {
+  if (!emp) return;
+  var setData = function() {
+    if (window.BX && window.BX.SiteButton && window.BX.SiteButton.setUserData) {
+      BX.SiteButton.setUserData({
+        name:  emp.full_name || '',
+        phone: emp.phone    || '',
+      });
+    }
+  };
+  // Пробуем сразу и через 3 сек (если виджет ещё грузится)
+  setData();
+  setTimeout(setData, 3000);
+}
+
 function openBitrix() {
-  var el = document.querySelector('.b24-widget-button-block')
-        || document.querySelector('.b24-widget-button-inner-container')
-        || document.querySelector('.b24-widget-button-wrapper')
-        || document.querySelector('[class*="b24-widget-button"]');
-  if (el) {
-    el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-    return;
-  }
-  // Виджет ещё не загрузился — подождать и повторить
-  setTimeout(function() {
-    var el2 = document.querySelector('.b24-widget-button-block')
-           || document.querySelector('[class*="b24-widget-button"]');
-    if (el2) el2.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-  }, 1000);
+  // Передаём данные перед открытием
+  setBitrixUser(window._profileCache);
+
+  var doClick = function() {
+    var el = document.querySelector('.b24-widget-button-block')
+          || document.querySelector('.b24-widget-button-inner-container')
+          || document.querySelector('.b24-widget-button-wrapper')
+          || document.querySelector('[class*="b24-widget-button"]');
+    if (el) { el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true})); return true; }
+    return false;
+  };
+  if (!doClick()) setTimeout(doClick, 1000);
 }
 
 // ════════════════════════════════════════════════════════

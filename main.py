@@ -12,6 +12,7 @@ from typing import Optional
 from datetime import date, datetime
 import re
 import os
+import secrets
 from collections import defaultdict
 import threading
 
@@ -414,6 +415,92 @@ def get_my_advances(employee_id: int = Depends(get_current_employee_id)):
         "total_balance":  float(totals["остаток_всего"]),
         "advances": [dict(r) for r in rows]
     }
+
+
+# ─── Панель менеджера ────────────────────────────────────────────────────────
+
+ADMIN_KEY = os.getenv("ADMIN_KEY", "lenta-admin-2026")
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+class AdvanceNoteRequest(BaseModel):
+    manager_note: str
+
+class AdvanceCreateRequest(BaseModel):
+    employee_id: int
+    advance_date: date
+    amount: float
+    balance: float
+    note: Optional[str] = None
+    manager_note: Optional[str] = None
+    project: Optional[str] = None
+
+def verify_admin(request: Request):
+    key = request.headers.get("X-Admin-Key", "")
+    if not secrets.compare_digest(key, ADMIN_KEY):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+@app.post("/admin/login", include_in_schema=False)
+def admin_login(body: AdminLoginRequest):
+    if not secrets.compare_digest(body.password, ADMIN_KEY):
+        raise HTTPException(status_code=403, detail="Неверный пароль")
+    return {"status": "ok"}
+
+@app.get("/admin/search", include_in_schema=False)
+def admin_search(q: str = Query(...), request: Request = None):
+    verify_admin(request)
+    phone = re.sub(r"\D", "", q)
+    if len(phone) == 11 and phone.startswith("8"):
+        phone = "7" + phone[1:]
+    with get_db() as conn:
+        if phone:
+            emp = fetchone(conn,
+                "SELECT employee_id, full_name, phone FROM employees WHERE phone = %s",
+                (phone,))
+        else:
+            emp = fetchone(conn,
+                "SELECT employee_id, full_name, phone FROM employees WHERE full_name ILIKE %s LIMIT 1",
+                (f"%{q}%",))
+    if not emp:
+        raise HTTPException(status_code=404, detail="Сотрудник не найден")
+    return dict(emp)
+
+@app.get("/admin/employee/{employee_id}/advances", include_in_schema=False)
+def admin_get_advances(employee_id: int, request: Request):
+    verify_admin(request)
+    with get_db() as conn:
+        rows = fetchall(conn, """
+            SELECT advance_id, advance_date AS дата, project AS проект,
+                   amount AS сумма, balance AS остаток,
+                   note AS примечание, manager_note AS комментарий_менеджера
+            FROM advances WHERE employee_id = %s ORDER BY advance_date DESC
+        """, (employee_id,))
+    return {"advances": [dict(r) for r in rows]}
+
+@app.patch("/admin/advance/{advance_id}", include_in_schema=False)
+def admin_update_advance(advance_id: int, body: AdvanceNoteRequest, request: Request):
+    verify_admin(request)
+    with get_db() as conn:
+        execute(conn,
+            "UPDATE advances SET manager_note = %s WHERE advance_id = %s",
+            (body.manager_note, advance_id))
+    return {"status": "ok"}
+
+@app.post("/admin/advance", include_in_schema=False)
+def admin_create_advance(body: AdvanceCreateRequest, request: Request):
+    verify_admin(request)
+    with get_db() as conn:
+        row = fetchone(conn, """
+            INSERT INTO advances (employee_id, advance_date, amount, balance, note, manager_note, project)
+            VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING advance_id
+        """, (body.employee_id, body.advance_date, body.amount, body.balance,
+              body.note, body.manager_note, body.project))
+    return {"advance_id": row["advance_id"]}
+
+@app.get("/admin", include_in_schema=False)
+def admin_page():
+    return FileResponse(os.path.join(STATIC_DIR, "admin.html"))
 
 
 # ─── Здоровье ────────────────────────────────────────────────────────────────
