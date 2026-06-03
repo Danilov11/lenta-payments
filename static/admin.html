@@ -346,41 +346,57 @@ function renderAdvancesTable(advances) {
 }
 
 function renderNoteCell(a) {
-  const note = a['комментарий_менеджера'];
+  const note = a['комментарий_менеджера'] || '';
+  const id   = a.advance_id;
   return `
-    <div id="note-view-${a.advance_id}">
+    <div id="note-view-${id}">
       ${note
         ? `<div class="note-text">${escHtml(note)}</div>`
         : `<span class="note-empty">нет комментария</span>`}
       <button class="btn btn-sm btn-ghost" style="margin-top:6px"
-              onclick="startEdit(${a.advance_id}, ${JSON.stringify(note || '')})">
+              data-id="${id}" data-note="${escHtml(note)}"
+              onclick="startEdit(this)">
         ✏️ Изменить
       </button>
     </div>`;
 }
 
-function startEdit(id, current) {
-  const cell = document.getElementById(`note-cell-${id}`);
+function startEdit(btn) {
+  const id      = btn.dataset.id;
+  const current = btn.dataset.note;
+  const cell    = document.getElementById(`note-cell-${id}`);
   cell.innerHTML = `
     <textarea class="edit-area" id="edit-ta-${id}">${escHtml(current)}</textarea>
     <div class="edit-actions">
-      <button class="btn btn-sm btn-primary" onclick="saveNote(${id})">Сохранить</button>
-      <button class="btn btn-sm btn-ghost"   onclick="cancelEdit(${id}, ${JSON.stringify(current)})">Отмена</button>
+      <button class="btn btn-sm btn-primary"
+              data-id="${id}" onclick="saveNote(this)">Сохранить</button>
+      <button class="btn btn-sm btn-ghost"
+              data-id="${id}" data-note="${escHtml(current)}"
+              onclick="cancelEdit(this)">Отмена</button>
     </div>`;
   document.getElementById(`edit-ta-${id}`).focus();
 }
 
-async function saveNote(id) {
+async function saveNote(btn) {
+  const id  = btn.dataset.id;
   const val = document.getElementById(`edit-ta-${id}`).value.trim();
+  btn.disabled = true;
+  btn.textContent = '...';
   try {
     await adminApi('PATCH', `/admin/advance/${id}`, { manager_note: val });
     const cell = document.getElementById(`note-cell-${id}`);
     cell.innerHTML = renderNoteCell({ advance_id: id, 'комментарий_менеджера': val });
-  } catch(e) { alert('Ошибка: ' + e.message); }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Сохранить';
+    alert('Ошибка: ' + e.message);
+  }
 }
 
-function cancelEdit(id, original) {
-  const cell = document.getElementById(`note-cell-${id}`);
+function cancelEdit(btn) {
+  const id       = btn.dataset.id;
+  const original = btn.dataset.note;
+  const cell     = document.getElementById(`note-cell-${id}`);
   cell.innerHTML = renderNoteCell({ advance_id: id, 'комментарий_менеджера': original });
 }
 
