@@ -969,6 +969,8 @@ function renderShifts(res) {
   const warnHtml = unregistered.length > 0
     ? `<div class="warn-banner">⚠️ ${t('warn_no_shift')}</div>`
     : '';
+  // Скрываем тариф для сотрудников Новосибирска
+  const isNsk = res.shifts.some(s => s['город'] === 'Новосибирск');
   const total = res.shifts.reduce((s,r) => s + (Number(r['выплата'])||0), 0);
   cont.innerHTML = warnHtml + `
     <div style="font-size:13px;color:var(--gray-3);margin-bottom:12px">
@@ -982,7 +984,7 @@ function renderShifts(res) {
           <th>${t('col_store')}</th>
           <th>${t('col_service')}</th>
           <th>${t('col_hours')}</th>
-          <th>${t('col_rate')}</th>
+          ${isNsk ? '' : `<th>${t('col_rate')}</th>`}
           <th>${t('col_payment')}</th>
         </tr>
       </thead>
@@ -998,7 +1000,7 @@ function renderShifts(res) {
             <td>${s['магазин'] || '—'}</td>
             <td style="max-width:180px;font-size:12px">${s['услуга'] || '—'}</td>
             <td>${s['часы_оплата'] ?? '—'}</td>
-            <td>${s['тариф'] ? s['тариф'] + ' ₽' : '—'}</td>
+            ${isNsk ? '' : `<td>${s['тариф'] ? s['тариф'] + ' ₽' : '—'}</td>`}
             <td class="amt">${s['выплата'] ? fmt(s['выплата']) + ' ₽' : '—'}</td>
           </tr>`;
         }).join('')}
