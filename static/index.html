@@ -6,7 +6,7 @@
   <title>Лента — Мои выплаты</title>
   <style>
     :root {
-      --green:  #1a7a3c; --green-l: #e8f5ed; --green-d: #145f2e;
+      --green:  #1a7272; --green-l: #e8f5f5; --green-d: #145858;
       --gray-0: #f5f6f8; --gray-1: #e9ebed; --gray-2: #b0b7bf;
       --gray-3: #6b7480; --text: #1a1d23; --white: #ffffff;
       --red: #d63b3b; --radius: 12px; --shadow: 0 2px 12px rgba(0,0,0,.08);
@@ -207,6 +207,32 @@
     .adv-total-label { font-size: 13px; color: var(--gray-3); }
     .adv-total-val   { font-size: 20px; font-weight: 700; color: var(--red); }
 
+    /* ── Лента событий ── */
+    .feed-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .feed-header, .feed-row {
+      display: grid;
+      grid-template-columns: 68px 1fr 1fr;
+      gap: 6px; align-items: start;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--gray-1);
+    }
+    .feed-header {
+      font-size: 10px; color: var(--gray-3); font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      background: var(--gray-0); position: sticky; top: 52px;
+    }
+    .feed-row-advance { background: #fdf6f0; }
+    .feed-row-pending { opacity: .6; }
+    .feed-date  { font-size: 12px; color: var(--gray-3); padding-top: 2px; }
+    .feed-left  { text-align: left; }
+    .feed-right { text-align: right; }
+    .feed-period, .feed-comment-col { display: none; }
+    .feed-amount-pay { font-size: 16px; font-weight: 700; color: var(--green); }
+    .feed-amount-adv { font-size: 16px; font-weight: 700; color: var(--red); }
+    .feed-amount-pending { font-size: 14px; color: var(--gray-2); }
+    .feed-sub   { font-size: 11px; color: var(--gray-3); margin-top: 2px; line-height: 1.4; }
+    .feed-meta  { font-size: 11px; color: var(--gray-3); margin-top: 3px; }
+
     /* ── Desktop ── */
     @media (min-width: 520px) {
       header { padding: 0 20px; height: 56px; }
@@ -235,6 +261,12 @@
       th { padding: 10px 12px; font-size: 11px; }
       td { padding: 11px 12px; }
       table { font-size: 14px; }
+      /* Feed desktop */
+      .feed-header, .feed-row {
+        grid-template-columns: 80px 1fr 1fr 100px 1fr;
+        padding: 11px 12px; gap: 10px;
+      }
+      .feed-period, .feed-comment-col { display: block; }
     }
   </style>
 </head>
@@ -305,10 +337,16 @@
         <div class="card-title" data-i18n="profile_title"></div>
         <div class="profile-grid" id="profile-grid"><div class="spinner"></div></div>
       </div>
-      <!-- Авансы -->
-      <div class="section-card" id="advances-card" style="display:none">
-        <div class="card-title" data-i18n="lbl_advances"></div>
-        <div id="advances-container"><div class="spinner"></div></div>
+      <!-- Сводка на профиле -->
+      <div class="section-card" id="profile-summary-card" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          <div class="card-title" style="margin:0" data-i18n="profile_month"></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="month" id="profile-filter-month" style="padding:6px 10px;font-size:14px;border:1.5px solid var(--gray-1);border-radius:8px;outline:none"/>
+            <button class="btn btn-primary" id="btn-profile-summary" style="width:auto;padding:7px 14px;font-size:13px" data-i18n="btn_show"></button>
+          </div>
+        </div>
+        <div id="profile-summary-container"><div class="spinner"></div></div>
       </div>
       <!-- Реферальная программа -->
       <div class="section-card" id="referrals-card" style="display:none">
@@ -317,7 +355,7 @@
       </div>
     </div>
 
-    <!-- ─ Смены ─ -->
+    <!-- ─ История (лента событий) ─ -->
     <div id="tab-shifts" class="hidden">
       <div class="card">
         <div class="card-title" data-i18n="shifts_title"></div>
@@ -329,13 +367,13 @@
           </div>
           <button class="btn btn-primary" id="btn-load-shifts" data-i18n="btn_show"></button>
         </div>
-        <div class="shifts-wrap" id="shifts-container">
+        <div id="feed-container">
           <div class="no-data" data-i18n="shifts_hint"></div>
         </div>
       </div>
     </div>
 
-    <!-- ─ Сводка ─ -->
+    <!-- ─ АПД (Сводка, без изменений) ─ -->
     <div id="tab-summary" class="hidden">
       <div class="card">
         <div class="card-title" data-i18n="summary_title"></div>
@@ -363,14 +401,21 @@ const I18N = {
     btn_login:         'Войти',
     btn_logout:        'Выйти',
     tab_profile:       'Профиль',
-    tab_shifts:        'Смены',
-    tab_summary:       'Сводка',
+    tab_shifts:        'История',
+    tab_summary:       'АПД',
     profile_title:     'Личные данные',
-    shifts_title:      'Мои смены',
-    summary_title:     'Выплаты за месяц',
+    shifts_title:      'Выплаты и авансы',
+    summary_title:     'Сводка за месяц',
     btn_show:          'Показать',
     shifts_hint:       'Выберите период и нажмите «Показать»',
     summary_hint:      'Выберите месяц и нажмите «Показать»',
+    feed_payment:      'Поступило оплатой',
+    feed_advance:      'Поступило авансом',
+    feed_period:       'Период',
+    feed_comment:      'Комментарий',
+    feed_empty:        'Нет данных за этот период',
+    lbl_adv_balance:   'Долг по авансам',
+    profile_month:     'Данные за месяц',
     lbl_fio:           'ФИО',
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
@@ -428,14 +473,21 @@ const I18N = {
     btn_login:         'Ворид шудан',
     btn_logout:        'Баромадан',
     tab_profile:       'Профил',
-    tab_shifts:        'Навбатҳо',
-    tab_summary:       'Ҷамъбаст',
+    tab_shifts:        'Таърих',
+    tab_summary:       'АПД',
     profile_title:     'Маълумоти шахсӣ',
-    shifts_title:      'Навбатҳои ман',
-    summary_title:     'Пардохт барои моҳ',
+    shifts_title:      'Пардохтҳо ва пешпардохтҳо',
+    summary_title:     'Хулоса барои моҳ',
     btn_show:          'Нишон додан',
     shifts_hint:       'Давраро интихоб кунед ва «Нишон додан»-ро пахш кунед',
     summary_hint:      'Моҳро интихоб кунед ва «Нишон додан»-ро пахш кунед',
+    feed_payment:      'Пардохт расид',
+    feed_advance:      'Пешпардохт расид',
+    feed_period:       'Давра',
+    feed_comment:      'Шарҳ',
+    feed_empty:        'Барои ин давра маълумот нест',
+    lbl_adv_balance:   'Қарзи пешпардохт',
+    profile_month:     'Маълумот барои моҳ',
     lbl_fio:           'Ном ва насаб',
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
@@ -493,14 +545,21 @@ const I18N = {
     btn_login:         'Kirish',
     btn_logout:        'Chiqish',
     tab_profile:       'Profil',
-    tab_shifts:        'Smenalar',
-    tab_summary:       'Xulosa',
+    tab_shifts:        'Tarix',
+    tab_summary:       'APD',
     profile_title:     'Shaxsiy ma\'lumotlar',
-    shifts_title:      'Mening smenalarim',
-    summary_title:     'Oylik to\'lov',
+    shifts_title:      'To\'lovlar va avanslar',
+    summary_title:     'Oylik xulosa',
     btn_show:          'Ko\'rsatish',
     shifts_hint:       'Davrni tanlang va «Ko\'rsatish»ni bosing',
     summary_hint:      'Oyni tanlang va «Ko\'rsatish»ni bosing',
+    feed_payment:      'To\'lov tushdi',
+    feed_advance:      'Avans tushdi',
+    feed_period:       'Davr',
+    feed_comment:      'Izoh',
+    feed_empty:        'Bu davr uchun ma\'lumot yo\'q',
+    lbl_adv_balance:   'Avans qarzi',
+    profile_month:     'Oylik ma\'lumot',
     lbl_fio:           'FIO',
     lbl_phone:         'Telefon',
     lbl_inn:           'INN',
@@ -558,14 +617,21 @@ const I18N = {
     btn_login:         'Кирүү',
     btn_logout:        'Чыгуу',
     tab_profile:       'Профиль',
-    tab_shifts:        'Сменалар',
-    tab_summary:       'Жыйынтык',
+    tab_shifts:        'Тарых',
+    tab_summary:       'АПД',
     profile_title:     'Жеке маалымат',
-    shifts_title:      'Менин сменаларым',
-    summary_title:     'Айлык төлөм',
+    shifts_title:      'Төлөмдөр жана аванстар',
+    summary_title:     'Айлык жыйынтык',
     btn_show:          'Көрсөтүү',
     shifts_hint:       'Мезгилди тандап, «Көрсөтүү»нү басыңыз',
     summary_hint:      'Айды тандап, «Көрсөтүү»нү басыңыз',
+    feed_payment:      'Төлөм келди',
+    feed_advance:      'Аванс келди',
+    feed_period:       'Мезгил',
+    feed_comment:      'Комментарий',
+    feed_empty:        'Бул мезгил үчүн маалымат жок',
+    lbl_adv_balance:   'Аванс карызы',
+    profile_month:     'Айлык маалымат',
     lbl_fio:           'АТА (аты-жөнү)',
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
@@ -649,11 +715,11 @@ function setLang(l) {
   // Перерисовываем динамический контент если уже загружен
   if (token) {
     renderProfile(window._profileCache);
-    if (window._shiftsCache)    renderShifts(window._shiftsCache);
-    if (window._summaryCache)   renderSummary(window._summaryCache);
-    if (window._advancesCache)  renderAdvances(window._advancesCache);
-    if (window._referralsCache) renderReferrals(window._referralsCache);
-    if (window._notifCache)     renderNotifications(window._notifCache);
+    if (window._profileSummaryCache) renderProfileSummary(window._profileSummaryCache);
+    if (window._feedShiftsCache)  renderFeed(window._feedShiftsCache, window._feedAdvancesCache);
+    if (window._summaryCache)     renderSummary(window._summaryCache);
+    if (window._referralsCache)   renderReferrals(window._referralsCache);
+    if (window._notifCache)       renderNotifications(window._notifCache);
   }
 }
 
@@ -736,11 +802,12 @@ document.getElementById('inp-phone').addEventListener('keydown', e => {
 document.getElementById('btn-logout').addEventListener('click', () => {
   token = null;
   localStorage.removeItem('lenta_token');
-  window._profileCache  = null;
-  window._shiftsCache   = null;
-  window._summaryCache  = null;
-  window._advancesCache  = null;
-  window._referralsCache = null;
+  window._profileCache        = null;
+  window._profileSummaryCache = null;
+  window._feedShiftsCache     = null;
+  window._feedAdvancesCache   = null;
+  window._summaryCache        = null;
+  window._referralsCache      = null;
   window._notifCache     = null;
   document.getElementById('profile-grid').innerHTML = '<div class="spinner"></div>';
   showAuth();
@@ -759,10 +826,69 @@ async function loadProfile() {
     if (e.message.includes('401')) { token = null; localStorage.removeItem('lenta_token'); showAuth(); }
     return;
   }
-  // Загружаем авансы и рефералы параллельно
-  loadAdvances();
+  // Загружаем данные параллельно
+  const prevMonth = getPrevMonth();
+  document.getElementById('profile-filter-month').value = prevMonth;
+  loadProfileSummary(prevMonth);
   loadReferrals();
 }
+
+function getPrevMonth() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+async function loadProfileSummary(monthStr) {
+  document.getElementById('profile-summary-card').style.display = 'block';
+  document.getElementById('profile-summary-container').innerHTML = '<div class="spinner"></div>';
+  try {
+    const [sumRes, advRes] = await Promise.all([
+      api('GET', '/me/summary?month=' + monthStr),
+      api('GET', '/me/advances')
+    ]);
+    window._profileSummaryCache = sumRes;
+    window._feedAdvancesCache   = advRes;
+    renderProfileSummary(sumRes, advRes);
+  } catch(e) { /* тихо */ }
+}
+
+function renderProfileSummary(res, advRes) {
+  if (!res) return;
+  const it  = res['итого'];
+  const bal = advRes?.total_balance || window._feedAdvancesCache?.total_balance || 0;
+  document.getElementById('profile-summary-container').innerHTML = `
+    <div class="summary-grid" style="margin-bottom:${bal > 0 ? '12px' : '0'}">
+      <div class="stat-box">
+        <div class="stat-val">${it['смен'] || 0}</div>
+        <div class="stat-label">${t('stat_shifts')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${it['часов_всего'] || 0}</div>
+        <div class="stat-label">${t('stat_hours')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${fmt(it['выплата_всего'])} ₽</div>
+        <div class="stat-label">${t('stat_payment')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${fmt(it['компенсация_обеда'])} ₽</div>
+        <div class="stat-label">${t('stat_lunch')}</div>
+      </div>
+    </div>
+    ${bal > 0 ? `
+    <div style="background:#fff3e0;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:13px;color:#7a3600">${t('lbl_adv_balance')}</span>
+      <span style="font-weight:700;color:var(--red)">${fmt(bal)} ₽</span>
+    </div>` : ''}`;
+}
+
+// Кнопка "Показать" на карточке профиля
+document.getElementById('btn-profile-summary').addEventListener('click', () => {
+  const m = document.getElementById('profile-filter-month').value;
+  if (m) loadProfileSummary(m);
+});
 
 function renderProfile(emp) {
   if (!emp) return;
@@ -829,48 +955,125 @@ function openBitrix() {
 // ════════════════════════════════════════════════════════
 //  АВАНСЫ
 // ════════════════════════════════════════════════════════
-async function loadAdvances() {
+// ════════════════════════════════════════════════════════
+//  ЛЕНТА СОБЫТИЙ (смены + авансы)
+// ════════════════════════════════════════════════════════
+async function loadFeed() {
+  const from = document.getElementById('filter-from').value;
+  const to   = document.getElementById('filter-to').value;
+  const cont = document.getElementById('feed-container');
+  cont.innerHTML = '<div class="spinner"></div>';
   try {
-    const res = await api('GET', '/me/advances');
-    window._advancesCache = res;
-    renderAdvances(res);
-  } catch(e) { /* тихо */ }
+    const params = new URLSearchParams();
+    if (from) params.append('from_date', from);
+    if (to)   params.append('to_date',   to);
+    const [shiftsRes, advRes] = await Promise.all([
+      api('GET', '/me/shifts?' + params),
+      api('GET', '/me/advances')
+    ]);
+    window._feedShiftsCache   = shiftsRes;
+    window._feedAdvancesCache = advRes;
+    // Обновляем аванс-баланс на карточке профиля
+    if (window._profileSummaryCache) renderProfileSummary(window._profileSummaryCache, advRes);
+    renderFeed(shiftsRes, advRes, from, to);
+  } catch(e) {
+    cont.innerHTML = `<div class="no-data" style="color:var(--red)">${e.message}</div>`;
+  }
 }
 
-function renderAdvances(res) {
-  const card = document.getElementById('advances-card');
-  const cont = document.getElementById('advances-container');
-  // Показываем блок только если есть непогашенный остаток
-  if (!res || res.advances.length === 0 || res.total_balance <= 0) {
-    card.style.display = 'none'; return;
+function renderFeed(shiftsRes, advRes, from, to) {
+  const cont = document.getElementById('feed-container');
+  const events = [];
+
+  // Смены
+  for (const s of (shiftsRes?.shifts || [])) {
+    const hasPayment = Number(s['выплата']) > 0;
+    events.push({
+      date: s['shift_date'],
+      type: hasPayment ? 'payment' : 'pending',
+      amount: s['выплата'],
+      store: s['магазин'],
+      service: s['услуга'],
+      hours: s['часы_оплата'],
+      unplanned: s['тип_смены'] === 'Смена без плана',
+      no_status: !s['статус_заказчика'] && !s['статус_исполнителя'],
+    });
   }
-  card.style.display = 'block';
-  // Показываем только строки с остатком
-  const active = res.advances.filter(a => Number(a['остаток']) > 0);
-  if (active.length === 0) { card.style.display = 'none'; return; }
-  cont.innerHTML = `
-    <div class="shifts-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>${t('lbl_adv_date')}</th>
-          <th>${t('lbl_adv_amount')}</th>
-          <th>${t('lbl_adv_total')}</th>
-          <th>${t('lbl_adv_manager')}</th>
-          <th>${t('lbl_adv_note')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${active.map(a => `
-          <tr>
-            <td>${formatDate(a['дата'])}</td>
-            <td style="font-weight:600;color:var(--red)">${fmt(a['сумма'])} ₽</td>
-            <td style="font-weight:600;color:var(--red)">${fmt(a['остаток'])} ₽</td>
-            <td style="font-size:12px;color:var(--text)">${a['комментарий_менеджера'] || '—'}</td>
-            <td style="font-size:12px;color:var(--gray-3)">${a['примечание'] || (a['проект'] || '—')}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
+
+  // Авансы — фильтруем по выбранному диапазону
+  const fromTs = from ? new Date(from).getTime() : 0;
+  const toTs   = to   ? new Date(to).getTime()   : Infinity;
+  for (const a of (advRes?.advances || [])) {
+    const aTs = new Date(a['дата']).getTime();
+    if (aTs < fromTs || aTs > toTs) continue;
+    events.push({
+      date: a['дата'],
+      type: 'advance',
+      amount: a['сумма'],
+      balance: a['остаток'],
+      period:  a['примечание'] || a['проект'] || '',
+      comment: a['комментарий_менеджера'] || '',
+    });
+  }
+
+  // Сортировка по убыванию даты
+  events.sort((a, b) => b.date.localeCompare(a.date));
+
+  const hasUnreg = shiftsRes?.shifts?.some(s => !s['статус_заказчика'] && !s['статус_исполнителя']);
+  const warn = hasUnreg ? `<div class="warn-banner">⚠️ ${t('warn_no_shift')}</div>` : '';
+
+  if (!events.length) {
+    cont.innerHTML = warn + `<div class="no-data">${t('feed_empty')}</div>`; return;
+  }
+
+  const rows = events.map(ev => {
+    const d = formatDate(ev.date);
+    if (ev.type === 'payment') {
+      return `<div class="feed-row">
+        <div class="feed-date">${d}</div>
+        <div class="feed-left">
+          <div class="feed-amount-pay">+${fmt(ev.amount)} ₽</div>
+          <div class="feed-sub">${ev.store || ''}${ev.unplanned ? ` <span class="badge badge-orange" style="font-size:10px;vertical-align:middle">${t('badge_unplanned')}</span>` : ''}</div>
+        </div>
+        <div class="feed-right"></div>
+        <div class="feed-period feed-comment-col"></div>
+        <div class="feed-comment-col"></div>
+      </div>`;
+    } else if (ev.type === 'pending') {
+      return `<div class="feed-row feed-row-pending">
+        <div class="feed-date">${d}</div>
+        <div class="feed-left">
+          <div class="feed-amount-pending">— ₽</div>
+          <div class="feed-sub">${ev.store || ''}${ev.unplanned ? ` <span class="badge badge-orange" style="font-size:10px;vertical-align:middle">${t('badge_unplanned')}</span>` : ''}${ev.no_status ? ' ⚠️' : ''}</div>
+        </div>
+        <div class="feed-right"></div>
+        <div class="feed-period feed-comment-col"></div>
+        <div class="feed-comment-col"></div>
+      </div>`;
+    } else {
+      return `<div class="feed-row feed-row-advance">
+        <div class="feed-date">${d}</div>
+        <div class="feed-left"></div>
+        <div class="feed-right">
+          <div class="feed-amount-adv">${fmt(ev.amount)} ₽</div>
+          ${Number(ev.balance) > 0 ? `<div class="feed-sub" style="color:var(--red)">ост. ${fmt(ev.balance)} ₽</div>` : ''}
+        </div>
+        <div class="feed-period feed-comment-col">${ev.period}</div>
+        <div class="feed-comment-col" style="font-size:12px;color:var(--text)">${ev.comment}</div>
+      </div>`;
+    }
+  }).join('');
+
+  cont.innerHTML = warn + `
+    <div class="feed-wrap">
+      <div class="feed-header">
+        <div class="feed-date">${t('col_date')}</div>
+        <div class="feed-left">← ${t('feed_payment')}</div>
+        <div class="feed-right">${t('feed_advance')} →</div>
+        <div class="feed-period feed-comment-col">${t('feed_period')}</div>
+        <div class="feed-comment-col">${t('feed_comment')}</div>
+      </div>
+      ${rows}
     </div>`;
 }
 
@@ -937,81 +1140,21 @@ function renderReferrals(res) {
 // ════════════════════════════════════════════════════════
 //  СМЕНЫ
 // ════════════════════════════════════════════════════════
+// Устанавливаем диапазон по умолчанию — прошлый месяц
 const now = new Date();
 const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
-document.getElementById('filter-from').value = `${y}-${m}-01`;
-document.getElementById('filter-to').value   = now.toISOString().slice(0,10);
+const prevM = new Date(now.getFullYear(), now.getMonth()-1, 1);
+const py = prevM.getFullYear(), pm = String(prevM.getMonth()+1).padStart(2,'0');
+const lastDayPrev = new Date(now.getFullYear(), now.getMonth(), 0);
+document.getElementById('filter-from').value = `${py}-${pm}-01`;
+document.getElementById('filter-to').value   = `${py}-${pm}-${String(lastDayPrev.getDate()).padStart(2,'0')}`;
 
-document.getElementById('btn-load-shifts').addEventListener('click', async () => {
-  const from = document.getElementById('filter-from').value;
-  const to   = document.getElementById('filter-to').value;
-  const cont = document.getElementById('shifts-container');
-  cont.innerHTML = '<div class="spinner"></div>';
-  try {
-    const params = new URLSearchParams();
-    if (from) params.append('from_date', from);
-    if (to)   params.append('to_date', to);
-    const res = await api('GET', '/me/shifts?' + params);
-    window._shiftsCache = res;
-    renderShifts(res);
-  } catch(e) {
-    cont.innerHTML = `<div class="no-data" style="color:var(--red)">${e.message}</div>`;
-  }
-});
-
-function renderShifts(res) {
-  const cont = document.getElementById('shifts-container');
-  if (!res || !res.shifts.length) {
-    cont.innerHTML = `<div class="no-data">${t('no_shifts')}</div>`; return;
-  }
-  // Смены без проставленного статуса
-  const unregistered = res.shifts.filter(s => !s['статус_заказчика'] && !s['статус_исполнителя']);
-  const warnHtml = unregistered.length > 0
-    ? `<div class="warn-banner">⚠️ ${t('warn_no_shift')}</div>`
-    : '';
-  // Скрываем тариф для сотрудников Новосибирска
-  const isNsk = res.shifts.some(s => (s['город'] || '').toLowerCase().includes('новосибирск'));
-  const total = res.shifts.reduce((s,r) => s + (Number(r['выплата'])||0), 0);
-  cont.innerHTML = warnHtml + `
-    <div style="font-size:13px;color:var(--gray-3);margin-bottom:12px">
-      ${t('total_label')}: <b>${res.total}</b>
-      &nbsp;·&nbsp; ${t('total_sum')}: <b class="amt">${fmt(total)} ₽</b>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>${t('col_date')}</th>
-          <th>${t('col_store')}</th>
-          <th>${t('col_service')}</th>
-          <th>${t('col_hours')}</th>
-          ${isNsk ? '' : `<th>${t('col_rate')}</th>`}
-          <th>${t('col_payment')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${res.shifts.map(s => {
-          const unplanned = s['тип_смены'] === 'Смена без плана';
-          return `
-          <tr${unplanned ? ' style="background:#fff8f0"' : ''}>
-            <td>
-              ${formatDate(s['shift_date'])}
-              ${unplanned ? `<br><span class="badge badge-orange" style="margin-top:3px;display:inline-block">${t('badge_unplanned')}</span>` : ''}
-            </td>
-            <td>${s['магазин'] || '—'}</td>
-            <td style="max-width:180px;font-size:12px">${s['услуга'] || '—'}</td>
-            <td>${s['часы_оплата'] ?? '—'}</td>
-            ${isNsk ? '' : `<td>${s['тариф'] ? s['тариф'] + ' ₽' : '—'}</td>`}
-            <td class="amt">${s['выплата'] ? fmt(s['выплата']) + ' ₽' : '—'}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
-}
+document.getElementById('btn-load-shifts').addEventListener('click', loadFeed);
 
 // ════════════════════════════════════════════════════════
 //  СВОДКА
 // ════════════════════════════════════════════════════════
-document.getElementById('filter-month').value = `${y}-${m}`;
+document.getElementById('filter-month').value = `${py}-${pm}`;
 
 document.getElementById('btn-load-summary').addEventListener('click', async () => {
   const month = document.getElementById('filter-month').value;
