@@ -1,0 +1,47 @@
+name: ETL — ежедневная загрузка данных
+
+on:
+  schedule:
+    # Каждый день в 02:00 UTC = 05:00 МСК
+    - cron: "0 2 * * *"
+  workflow_dispatch:  # можно запустить вручную из GitHub
+
+jobs:
+  etl-shifts:
+    name: Загрузка выплат из Google Sheets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Зависимости
+        run: pip install pandas requests psycopg2-binary openpyxl
+
+      - name: Запуск ETL смен
+        env:
+          DATABASE_URL:      ${{ secrets.DATABASE_URL }}
+          SHIFTS_SHEET_URL:  ${{ secrets.SHIFTS_SHEET_URL }}
+        run: python etl_shifts.py
+
+  etl-referrals:
+    name: Обновление рефералов (АПД)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Зависимости
+        run: pip install pandas requests psycopg2-binary openpyxl
+
+      - name: Запуск ETL рефералов
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python etl_referrals.py

@@ -487,6 +487,69 @@ def admin_update_advance(advance_id: int, body: AdvanceNoteRequest, request: Req
             (body.manager_note, advance_id))
     return {"status": "ok"}
 
+@app.post("/admin/sync/advances", include_in_schema=False)
+def sync_advances_from_sheet(payload: dict, request: Request):
+    """Принимает авансы из Google Apps Script и полностью перезаписывает таблицу."""
+    verify_admin(request)
+    records = payload.get("advances", [])
+    inserted = 0
+    skipped  = 0
+
+    def norm_phone(p):
+        if not p: return None
+        d = re.sub(r"\D", "", str(p))
+        if len(d) == 11 and d.startswith("8"): d = "7" + d[1:]
+        return d if len(d) >= 10 else None
+
+    def find_emp(conn, full_name, phone):
+        ph = norm_phone(phone)
+        if ph:
+            r = fetchone(conn, "SELECT employee_id FROM employees WHERE phone=%s", (ph,))
+            if r: return r["employee_id"]
+        if full_name:
+            r = fetchone(conn, "SELECT employee_id FROM employees WHERE TRIM(full_name)=%s LIMIT 1", (full_name.strip(),))
+            if r: return r["employee_id"]
+            parts = full_name.strip().split()
+            if parts and len(parts[0]) >= 3:
+                rows = fetchall(conn, "SELECT employee_id FROM employees WHERE full_name ILIKE %s LIMIT 2", (parts[0]+"%",))
+                if len(rows) == 1: return rows[0]["employee_id"]
+        return None
+
+    with get_db() as conn:
+        execute(conn, "TRUNCATE TABLE advances RESTART IDENTITY")
+        for rec in records:
+            try:
+                adv_date = date.fromisoformat(str(rec.get("date",""))[:10])
+            except Exception:
+                skipped += 1; continue
+            try:
+                amount = float(rec.get("amount") or 0)
+            except Exception:
+                skipped += 1; continue
+            if amount <= 0:
+                skipped += 1; continue
+
+            emp_id = find_emp(conn, rec.get("full_name"), rec.get("phone"))
+            if not emp_id:
+                skipped += 1; continue
+
+            balance_raw = rec.get("balance")
+            try:    balance = float(balance_raw) if balance_raw not in (None, "") else None
+            except: balance = None
+            note = rec.get("note") or None
+
+            execute(conn, """
+                INSERT INTO advances
+                    (employee_id, advance_date, amount, balance, project, note, manager_note)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (emp_id, adv_date, amount, balance,
+                  rec.get("project") or None, note, note))
+            inserted += 1
+
+    return {"status": "ok", "inserted": inserted, "skipped": skipped,
+            "total": len(records)}
+
+
 @app.post("/admin/advance", include_in_schema=False)
 def admin_create_advance(body: AdvanceCreateRequest, request: Request):
     verify_admin(request)
