@@ -815,6 +815,7 @@ async function loadProfile() {
   document.getElementById('profile-filter-month').value = prevMonth;
   loadProfileSummary(prevMonth);
   loadReferrals();
+  loadFeed(); // автозагрузка ленты за прошлый месяц
 }
 
 function getPrevMonth() {
