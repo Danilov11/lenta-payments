@@ -327,7 +327,6 @@
   <main>
     <div class="tabs">
       <button class="tab active" data-tab="profile" data-i18n="tab_profile"></button>
-      <button class="tab" data-tab="shifts"  data-i18n="tab_shifts"></button>
       <button class="tab" data-tab="summary" data-i18n="tab_summary"></button>
     </div>
 
@@ -348,16 +347,8 @@
         </div>
         <div id="profile-summary-container"><div class="spinner"></div></div>
       </div>
-      <!-- Реферальная программа -->
-      <div class="section-card" id="referrals-card" style="display:none">
-        <div class="card-title" data-i18n="lbl_referrals"></div>
-        <div id="referrals-container"><div class="spinner"></div></div>
-      </div>
-    </div>
-
-    <!-- ─ История (лента событий) ─ -->
-    <div id="tab-shifts" class="hidden">
-      <div class="card">
+      <!-- История (лента событий) — ниже сводки за месяц -->
+      <div class="section-card">
         <div class="card-title" data-i18n="shifts_title"></div>
         <div class="filter-row">
           <div class="filter-row-dates">
@@ -373,17 +364,11 @@
       </div>
     </div>
 
-    <!-- ─ АПД (Сводка, без изменений) ─ -->
+    <!-- ─ АПД — Акция «Приведи друга» ─ -->
     <div id="tab-summary" class="hidden">
-      <div class="card">
-        <div class="card-title" data-i18n="summary_title"></div>
-        <div class="filter-row">
-          <input type="month" id="filter-month"/>
-          <button class="btn btn-primary" id="btn-load-summary" data-i18n="btn_show"></button>
-        </div>
-        <div id="summary-container">
-          <div class="no-data" data-i18n="summary_hint"></div>
-        </div>
+      <div class="section-card" id="referrals-card">
+        <div class="card-title" data-i18n="tab_summary"></div>
+        <div id="referrals-container"><div class="spinner"></div></div>
       </div>
     </div>
   </main>
@@ -402,10 +387,10 @@ const I18N = {
     btn_logout:        'Выйти',
     tab_profile:       'Профиль',
     tab_shifts:        'История',
-    tab_summary:       'АПД',
+    tab_summary:       'АПД 🤝',
     profile_title:     'Личные данные',
     shifts_title:      'Выплаты и авансы',
-    summary_title:     'Сводка за месяц',
+    summary_title:     'Акция «Приведи друга»',
     btn_show:          'Показать',
     shifts_hint:       'Выберите период и нажмите «Показать»',
     summary_hint:      'Выберите месяц и нажмите «Показать»',
@@ -474,10 +459,10 @@ const I18N = {
     btn_logout:        'Баромадан',
     tab_profile:       'Профил',
     tab_shifts:        'Таърих',
-    tab_summary:       'АПД',
+    tab_summary:       'АПД 🤝',
     profile_title:     'Маълумоти шахсӣ',
     shifts_title:      'Пардохтҳо ва пешпардохтҳо',
-    summary_title:     'Хулоса барои моҳ',
+    summary_title:     'Барнома «Дӯст биёр»',
     btn_show:          'Нишон додан',
     shifts_hint:       'Давраро интихоб кунед ва «Нишон додан»-ро пахш кунед',
     summary_hint:      'Моҳро интихоб кунед ва «Нишон додан»-ро пахш кунед',
@@ -546,10 +531,10 @@ const I18N = {
     btn_logout:        'Chiqish',
     tab_profile:       'Profil',
     tab_shifts:        'Tarix',
-    tab_summary:       'APD',
+    tab_summary:       'APD 🤝',
     profile_title:     'Shaxsiy ma\'lumotlar',
     shifts_title:      'To\'lovlar va avanslar',
-    summary_title:     'Oylik xulosa',
+    summary_title:     '«Do\'st olib kel» dasturi',
     btn_show:          'Ko\'rsatish',
     shifts_hint:       'Davrni tanlang va «Ko\'rsatish»ni bosing',
     summary_hint:      'Oyni tanlang va «Ko\'rsatish»ni bosing',
@@ -618,10 +603,10 @@ const I18N = {
     btn_logout:        'Чыгуу',
     tab_profile:       'Профиль',
     tab_shifts:        'Тарых',
-    tab_summary:       'АПД',
+    tab_summary:       'АПД 🤝',
     profile_title:     'Жеке маалымат',
     shifts_title:      'Төлөмдөр жана аванстар',
-    summary_title:     'Айлык жыйынтык',
+    summary_title:     '«Дос алып кел» программасы',
     btn_show:          'Көрсөтүү',
     shifts_hint:       'Мезгилди тандап, «Көрсөтүү»нү басыңыз',
     summary_hint:      'Айды тандап, «Көрсөтүү»нү басыңыз',
@@ -717,7 +702,6 @@ function setLang(l) {
     renderProfile(window._profileCache);
     if (window._profileSummaryCache) renderProfileSummary(window._profileSummaryCache);
     if (window._feedShiftsCache)  renderFeed(window._feedShiftsCache, window._feedAdvancesCache);
-    if (window._summaryCache)     renderSummary(window._summaryCache);
     if (window._referralsCache)   renderReferrals(window._referralsCache);
     if (window._notifCache)       renderNotifications(window._notifCache);
   }
@@ -761,7 +745,7 @@ document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    ['profile','shifts','summary'].forEach(name => {
+    ['profile','summary'].forEach(name => {
       document.getElementById('tab-' + name)
               .classList.toggle('hidden', name !== btn.dataset.tab);
     });
@@ -1099,12 +1083,10 @@ function refStatusBadge(status) {
 }
 
 function renderReferrals(res) {
-  const card = document.getElementById('referrals-card');
   const cont = document.getElementById('referrals-container');
   if (!res || res.referrals.length === 0) {
-    card.style.display = 'none'; return;
+    cont.innerHTML = `<div class="no-data">${t('lbl_ref_empty')}</div>`; return;
   }
-  card.style.display = 'block';
   const totalPaid = res.referrals
     .filter(r => (r['статус']||'').toLowerCase().includes('оплач'))
     .reduce((s,r) => s + (Number(r['сумма_премии'])||0), 0);
@@ -1152,66 +1134,8 @@ document.getElementById('filter-to').value   = `${py}-${pm}-${String(lastDayPrev
 document.getElementById('btn-load-shifts').addEventListener('click', loadFeed);
 
 // ════════════════════════════════════════════════════════
-//  СВОДКА
+//  (Отдельная страница сводки удалена — сводка встроена в Профиль)
 // ════════════════════════════════════════════════════════
-document.getElementById('filter-month').value = `${py}-${pm}`;
-
-document.getElementById('btn-load-summary').addEventListener('click', async () => {
-  const month = document.getElementById('filter-month').value;
-  const cont  = document.getElementById('summary-container');
-  cont.innerHTML = '<div class="spinner"></div>';
-  try {
-    const res = await api('GET', '/me/summary?month=' + month);
-    window._summaryCache = res;
-    renderSummary(res);
-  } catch(e) {
-    cont.innerHTML = `<div class="no-data" style="color:var(--red)">${e.message}</div>`;
-  }
-});
-
-function renderSummary(res) {
-  const cont = document.getElementById('summary-container');
-  if (!res) return;
-  const it = res['итого'];
-  cont.innerHTML = `
-    <div class="summary-grid" style="margin-bottom:20px">
-      <div class="stat-box">
-        <div class="stat-val">${it['смен'] || 0}</div>
-        <div class="stat-label">${t('stat_shifts')}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val">${it['часов_всего'] || 0}</div>
-        <div class="stat-label">${t('stat_hours')}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val">${fmt(it['выплата_всего'])} ₽</div>
-        <div class="stat-label">${t('stat_payment')}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val">${fmt(it['компенсация_обеда'])} ₽</div>
-        <div class="stat-label">${t('stat_lunch')}</div>
-      </div>
-    </div>
-    ${res['по_магазинам'].length ? `
-      <div class="card-title" style="margin-bottom:12px">${t('by_stores')}</div>
-      <table>
-        <thead>
-          <tr>
-            <th>${t('col_store2')}</th>
-            <th>${t('col_shifts2')}</th>
-            <th>${t('col_payment2')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${res['по_магазинам'].map(r => `
-            <tr>
-              <td>${r['магазин'] || '—'}</td>
-              <td>${r['смен']}</td>
-              <td class="amt">${fmt(r['выплата'])} ₽</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>` : `<div class="no-data">${t('no_data')}</div>`}`;
-}
 
 // ════════════════════════════════════════════════════════
 //  УТИЛИТЫ
