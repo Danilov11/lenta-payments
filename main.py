@@ -571,8 +571,9 @@ def admin_page():
 
 BITRIX_WEBHOOK = os.getenv(
     "BITRIX_WEBHOOK",
-    "https://b24-ku4v54.bitrix24.ru/rest/120298/q3dy3790nuatgh3e"
+    "https://b24-ku4v54.bitrix24.ru/rest/120298/skj76rcj1h3f3eno"
 )
+BITRIX_MANAGER_ID = os.getenv("BITRIX_MANAGER_ID", "120298")
 
 @app.post("/me/notify-manager", summary="Создать лид в Битрикс24")
 async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
@@ -604,15 +605,23 @@ async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
 
     try:
         async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.post(
+            # Создаём лид в CRM
+            lead_resp = await client.post(
                 f"{BITRIX_WEBHOOK}/crm.lead.add.json",
                 json=payload,
             )
-        result = resp.json()
-        lead_id = result.get("result")
+            lead_id = lead_resp.json().get("result")
+
+            # Личное уведомление менеджеру
+            await client.post(
+                f"{BITRIX_WEBHOOK}/im.notify.personal.add.json",
+                data={
+                    "to":      BITRIX_MANAGER_ID,
+                    "message": f"💬 Сотрудник {full_name} ({emp['phone']}) открыл чат через портал Лента. Лид #{lead_id} создан в CRM.",
+                }
+            )
         return {"status": "ok", "lead_id": lead_id}
     except Exception as e:
-        # Не блокируем открытие чата если Битрикс недоступен
         return {"status": "error", "detail": str(e)}
 
 
