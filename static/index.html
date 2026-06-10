@@ -929,15 +929,33 @@ function openBitrix() {
   // Создаём лид в Битрикс24 CRM (не ждём ответа — открываем чат сразу)
   api('POST', '/me/notify-manager').catch(() => {});
 
+  // 1) Официальный API Битрикс24
+  if (window.BX && window.BX.SiteButton) {
+    try { BX.SiteButton.btnClick(); return; } catch(e) {}
+  }
+  // 2) Клик по кнопке виджета
+  var selectors = [
+    '.b24-widget-button-block',
+    '.b24-widget-button-inner-container',
+    '.b24-widget-button-wrapper',
+    '[class*="b24-widget-button"]',
+    'button[data-b24]',
+  ];
   var doClick = function() {
-    var el = document.querySelector('.b24-widget-button-block')
-          || document.querySelector('.b24-widget-button-inner-container')
-          || document.querySelector('.b24-widget-button-wrapper')
-          || document.querySelector('[class*="b24-widget-button"]');
-    if (el) { el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true})); return true; }
+    for (var i = 0; i < selectors.length; i++) {
+      var el = document.querySelector(selectors[i]);
+      if (el) { el.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); return true; }
+    }
     return false;
   };
-  if (!doClick()) setTimeout(doClick, 1000);
+  if (!doClick()) {
+    setTimeout(function() {
+      // 3) Fallback — открываем Битрикс24 напрямую в новой вкладке
+      if (!doClick()) {
+        window.open('https://b24-ku4v54.bitrix24.ru/online/', '_blank');
+      }
+    }, 1500);
+  }
 }
 
 // ════════════════════════════════════════════════════════
