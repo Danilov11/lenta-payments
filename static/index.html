@@ -931,17 +931,20 @@ function setBitrixUser(emp) {
 var _bitrixLoaded = false;
 
 function openBitrix() {
-  setBitrixUser(window._profileCache);
   api('POST', '/me/notify-manager').catch(() => {});
 
   var tryOpen = function() {
-    if (window.BX && window.BX.SiteButton) {
+    // Передаём данные сотрудника — виджет уже загружен
+    if (window.BX && window.BX.SiteButton && window.BX.SiteButton.setUserData) {
+      var emp = window._profileCache;
+      if (emp) {
+        BX.SiteButton.setUserData({ name: emp.full_name || '', phone: emp.phone || '' });
+      }
       try { BX.SiteButton.btnClick(); return; } catch(e) {}
     }
     var el = document.querySelector('.b24-widget-button-block')
           || document.querySelector('[class*="b24-widget-button"]');
     if (el) { el.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); return; }
-    // Fallback
     window.open('https://b24-ku4v54.bitrix24.ru/online/', '_blank');
   };
 
@@ -950,12 +953,14 @@ function openBitrix() {
     return;
   }
 
-  // Первое нажатие — загружаем виджет и открываем после загрузки
   _bitrixLoaded = true;
   var s = document.createElement('script');
   s.async = true;
   s.src = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js?' + (Date.now()/60000|0);
-  s.onload = function() { setTimeout(tryOpen, 800); };
+  s.onload = function() {
+    // Ждём инициализации виджета, потом передаём данные и открываем
+    setTimeout(tryOpen, 1200);
+  };
   document.body.appendChild(s);
 }
 
