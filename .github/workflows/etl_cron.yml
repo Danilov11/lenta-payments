@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
 
       - name: Зависимости
-        run: pip install pandas requests psycopg2-binary openpyxl
+        run: pip install pandas requests psycopg2-binary openpyxl python-dotenv
 
       - name: Запуск ETL смен
         env:
@@ -39,7 +39,7 @@ jobs:
           python-version: "3.11"
 
       - name: Зависимости
-        run: pip install pandas requests psycopg2-binary openpyxl
+        run: pip install pandas requests psycopg2-binary openpyxl python-dotenv
 
       - name: Запуск ETL рефералов
         env:
