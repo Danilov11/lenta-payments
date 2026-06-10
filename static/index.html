@@ -922,40 +922,35 @@ function setBitrixUser(emp) {
   setTimeout(setData, 3000);
 }
 
-function openBitrix() {
-  // Передаём данные в виджет
-  setBitrixUser(window._profileCache);
+var _bitrixLoaded = false;
 
-  // Создаём лид в Битрикс24 CRM (не ждём ответа — открываем чат сразу)
+function openBitrix() {
+  setBitrixUser(window._profileCache);
   api('POST', '/me/notify-manager').catch(() => {});
 
-  // 1) Официальный API Битрикс24
-  if (window.BX && window.BX.SiteButton) {
-    try { BX.SiteButton.btnClick(); return; } catch(e) {}
-  }
-  // 2) Клик по кнопке виджета
-  var selectors = [
-    '.b24-widget-button-block',
-    '.b24-widget-button-inner-container',
-    '.b24-widget-button-wrapper',
-    '[class*="b24-widget-button"]',
-    'button[data-b24]',
-  ];
-  var doClick = function() {
-    for (var i = 0; i < selectors.length; i++) {
-      var el = document.querySelector(selectors[i]);
-      if (el) { el.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); return true; }
+  var tryOpen = function() {
+    if (window.BX && window.BX.SiteButton) {
+      try { BX.SiteButton.btnClick(); return; } catch(e) {}
     }
-    return false;
+    var el = document.querySelector('.b24-widget-button-block')
+          || document.querySelector('[class*="b24-widget-button"]');
+    if (el) { el.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); return; }
+    // Fallback
+    window.open('https://b24-ku4v54.bitrix24.ru/online/', '_blank');
   };
-  if (!doClick()) {
-    setTimeout(function() {
-      // 3) Fallback — открываем Битрикс24 напрямую в новой вкладке
-      if (!doClick()) {
-        window.open('https://b24-ku4v54.bitrix24.ru/online/', '_blank');
-      }
-    }, 1500);
+
+  if (_bitrixLoaded) {
+    tryOpen();
+    return;
   }
+
+  // Первое нажатие — загружаем виджет и открываем после загрузки
+  _bitrixLoaded = true;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js?' + (Date.now()/60000|0);
+  s.onload = function() { setTimeout(tryOpen, 800); };
+  document.body.appendChild(s);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1260,12 +1255,6 @@ else        { showAuth(); }
 <noscript><div><img src="https://mc.yandex.ru/watch/109594115" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 
-<!-- Битрикс24 виджет -->
-<script>
-  (function(w,d,u){
-    var s=d.createElement('script');s.async=true;s.src=u+'?'+(Date.now()/60000|0);
-    var h=d.getElementsByTagName('script')[0];h.parentNode.insertBefore(s,h);
-  })(window,document,'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js');
-</script>
+<!-- Битрикс24 виджет — грузится только при первом нажатии кнопки -->
 </body>
 </html>
