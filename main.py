@@ -15,6 +15,7 @@ import os
 import secrets
 from collections import defaultdict
 import threading
+import httpx
 
 from database import get_db, fetchone, fetchall, execute, DSN
 from auth import create_access_token, get_current_employee_id
@@ -564,6 +565,55 @@ def admin_create_advance(body: AdvanceCreateRequest, request: Request):
 @app.get("/admin", include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(STATIC_DIR, "admin.html"))
+
+
+# ─── Битрикс24 интеграция ────────────────────────────────────────────────────
+
+BITRIX_WEBHOOK = os.getenv(
+    "BITRIX_WEBHOOK",
+    "https://b24-ku4v54.bitrix24.ru/rest/120298/q3dy3790nuatgh3e"
+)
+
+@app.post("/me/notify-manager", summary="Создать лид в Битрикс24")
+async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
+    """При нажатии «Написать менеджеру» создаёт лид в CRM с данными сотрудника."""
+    with get_db() as conn:
+        emp = fetchone(conn,
+            "SELECT full_name, phone FROM employees WHERE employee_id=%s",
+            (employee_id,))
+    if not emp:
+        raise HTTPException(404, "Сотрудник не найден")
+
+    full_name = emp["full_name"] or ""
+    parts     = full_name.strip().split()
+    last_name  = parts[0] if parts else ""
+    first_name = parts[1] if len(parts) > 1 else ""
+    mid_name   = parts[2] if len(parts) > 2 else ""
+
+    payload = {
+        "fields": {
+            "TITLE":      f"Обращение сотрудника: {full_name}",
+            "LAST_NAME":  last_name,
+            "NAME":       first_name,
+            "SECOND_NAME": mid_name,
+            "PHONE":      [{"VALUE": emp["phone"], "VALUE_TYPE": "WORK"}],
+            "SOURCE_ID":  "WEB",
+            "COMMENTS":   f"Сотрудник {full_name} ({emp['phone']}) написал через портал Лента.",
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.post(
+                f"{BITRIX_WEBHOOK}/crm.lead.add.json",
+                json=payload,
+            )
+        result = resp.json()
+        lead_id = result.get("result")
+        return {"status": "ok", "lead_id": lead_id}
+    except Exception as e:
+        # Не блокируем открытие чата если Битрикс недоступен
+        return {"status": "error", "detail": str(e)}
 
 
 # ─── Здоровье ────────────────────────────────────────────────────────────────

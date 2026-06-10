@@ -923,8 +923,11 @@ function setBitrixUser(emp) {
 }
 
 function openBitrix() {
-  // Передаём данные перед открытием
+  // Передаём данные в виджет
   setBitrixUser(window._profileCache);
+
+  // Создаём лид в Битрикс24 CRM (не ждём ответа — открываем чат сразу)
+  api('POST', '/me/notify-manager').catch(() => {});
 
   var doClick = function() {
     var el = document.querySelector('.b24-widget-button-block')
