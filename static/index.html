@@ -724,6 +724,12 @@ async function api(method, path, body) {
   if (body)  opts.body = JSON.stringify(body);
   const res  = await fetch(API_BASE + path, opts);
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    token = null;
+    localStorage.removeItem('lenta_token');
+    showAuth();
+    throw new Error('401');
+  }
   if (!res.ok) throw new Error(data.detail || 'Error');
   return data;
 }
