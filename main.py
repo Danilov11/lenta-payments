@@ -569,11 +569,8 @@ def admin_page():
 
 # ─── Битрикс24 интеграция ────────────────────────────────────────────────────
 
-BITRIX_WEBHOOK = os.getenv(
-    "BITRIX_WEBHOOK",
-    "https://b24-ku4v54.bitrix24.ru/rest/120298/skj76rcj1h3f3eno"
-)
-BITRIX_MANAGER_ID = os.getenv("BITRIX_MANAGER_ID", "120298")
+BITRIX_WEBHOOK  = os.getenv("BITRIX_WEBHOOK",    "https://b24-ku4v54.bitrix24.ru/rest/120298/skj76rcj1h3f3eno")
+BITRIX_CHAT_ID  = os.getenv("BITRIX_CHAT_ID",    "chat2")   # ID чата горячей линии
 
 @app.post("/me/notify-manager", summary="Создать лид в Битрикс24")
 async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
@@ -586,41 +583,17 @@ async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
         raise HTTPException(404, "Сотрудник не найден")
 
     full_name = emp["full_name"] or ""
-    parts     = full_name.strip().split()
-    last_name  = parts[0] if parts else ""
-    first_name = parts[1] if len(parts) > 1 else ""
-    mid_name   = parts[2] if len(parts) > 2 else ""
-
-    payload = {
-        "fields": {
-            "TITLE":      f"Обращение сотрудника: {full_name}",
-            "LAST_NAME":  last_name,
-            "NAME":       first_name,
-            "SECOND_NAME": mid_name,
-            "PHONE":      [{"VALUE": emp["phone"], "VALUE_TYPE": "WORK"}],
-            "SOURCE_ID":  "WEB",
-            "COMMENTS":   f"Сотрудник {full_name} ({emp['phone']}) написал через портал Лента.",
-        }
-    }
 
     try:
         async with httpx.AsyncClient(timeout=8) as client:
-            # Создаём лид в CRM
-            lead_resp = await client.post(
-                f"{BITRIX_WEBHOOK}/crm.lead.add.json",
-                json=payload,
-            )
-            lead_id = lead_resp.json().get("result")
-
-            # Личное уведомление менеджеру
-            await client.post(
-                f"{BITRIX_WEBHOOK}/im.notify.personal.add.json",
-                data={
-                    "to":      BITRIX_MANAGER_ID,
-                    "message": f"💬 Сотрудник {full_name} ({emp['phone']}) открыл чат через портал Лента. Лид #{lead_id} создан в CRM.",
+            resp = await client.post(
+                f"{BITRIX_WEBHOOK}/im.message.add.json",
+                json={
+                    "DIALOG_ID": BITRIX_CHAT_ID,
+                    "MESSAGE":   f"💬 Сотрудник {full_name} ({emp['phone']}) открыл чат через портал Лента",
                 }
             )
-        return {"status": "ok", "lead_id": lead_id}
+        return {"status": "ok", "message_id": resp.json().get("result")}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
