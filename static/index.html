@@ -938,30 +938,15 @@ function openBitrix() {
   var doOpen = function() {
     // Передаём данные — сначала setUserData, потом открываем с задержкой
     if (window.BX && window.BX.SiteButton) {
-      if (emp && BX.SiteButton.setUserData) {
-        BX.SiteButton.setUserData({
-          name:  emp.full_name || '',
-          phone: emp.phone    || '',
-        });
-      }
-      // Пауза чтобы виджет применил данные перед открытием
       setTimeout(function() {
         try { BX.SiteButton.btnClick(); } catch(e) {}
       }, 400);
       return;
     }
-    window.open('https://b24-ku4v54.bitrix24.ru/online/', '_blank');
   };
 
   if (_bitrixLoaded) {
-    // Виджет уже загружен — ждём готовности BX.SiteButton через polling
-    var attempts = 0;
-    var poll = setInterval(function() {
-      if (window.BX && window.BX.SiteButton || attempts++ > 20) {
-        clearInterval(poll);
-        doOpen();
-      }
-    }, 100);
+    doOpen();
     return;
   }
 
