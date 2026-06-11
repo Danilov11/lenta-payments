@@ -570,7 +570,7 @@ def admin_page():
 # ─── Битрикс24 интеграция ────────────────────────────────────────────────────
 
 BITRIX_WEBHOOK  = os.getenv("BITRIX_WEBHOOK",    "https://b24-ku4v54.bitrix24.ru/rest/120298/skj76rcj1h3f3eno")
-BITRIX_CHAT_ID  = os.getenv("BITRIX_CHAT_ID",    "chat417176")  # Открытая линия (Мои Оплаты)
+BITRIX_MANAGER_ID = os.getenv("BITRIX_MANAGER_ID", "120298")  # ID менеджера в Битрикс24
 
 @app.post("/me/notify-manager", summary="Создать лид в Битрикс24")
 async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
@@ -587,13 +587,13 @@ async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
     try:
         async with httpx.AsyncClient(timeout=8) as client:
             resp = await client.post(
-                f"{BITRIX_WEBHOOK}/im.message.add.json",
-                json={
-                    "DIALOG_ID": BITRIX_CHAT_ID,
-                    "MESSAGE":   f"💬 Сотрудник {full_name} ({emp['phone']}) открыл чат через портал Лента",
+                f"{BITRIX_WEBHOOK}/im.notify.personal.add.json",
+                data={
+                    "to":      BITRIX_MANAGER_ID,
+                    "message": f"💬 Сотрудник {full_name} ({emp['phone']}) открыл чат через портал Лента",
                 }
             )
-        return {"status": "ok", "message_id": resp.json().get("result")}
+        return {"status": "ok", "notify_id": resp.json().get("result")}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
