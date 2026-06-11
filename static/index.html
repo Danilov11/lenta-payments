@@ -912,21 +912,21 @@ function renderProfile(emp) {
   `;
 }
 
-// Передаём данные сотрудника в Bitrix24 при загрузке профиля
-function setBitrixUser(emp) {
-  if (!emp) return;
-  var setData = function() {
-    if (window.BX && window.BX.SiteButton && window.BX.SiteButton.setUserData) {
-      BX.SiteButton.setUserData({
-        name:  emp.full_name || '',
-        phone: emp.phone    || '',
-      });
-    }
-  };
-  // Пробуем сразу и через 3 сек (если виджет ещё грузится)
-  setData();
-  setTimeout(setData, 3000);
-}
+// Слушаем инициализацию виджета и передаём данные через setUserRegisterData
+window.addEventListener('onBitrixLiveChat', function(event) {
+  var emp = window._profileCache;
+  if (!emp || !emp.bitrix_hash) return;
+  var widget = event.detail.widget;
+  var parts  = (emp.full_name || '').trim().split(' ');
+  widget.setUserRegisterData({
+    hash:      emp.bitrix_hash,
+    name:      parts[1] || parts[0] || '',
+    lastName:  parts[0] || '',
+    phone:     emp.phone || '',
+  });
+});
+
+function setBitrixUser(emp) { /* данные теперь передаются через onBitrixLiveChat */ }
 
 var _bitrixLoaded = false;
 

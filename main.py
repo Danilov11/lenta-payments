@@ -13,6 +13,7 @@ from datetime import date, datetime
 import re
 import os
 import secrets
+import hashlib
 from collections import defaultdict
 import threading
 import httpx
@@ -232,7 +233,9 @@ def get_my_profile(employee_id: int = Depends(get_current_employee_id)):
         """, (employee_id,))
     if not emp:
         raise HTTPException(status_code=404, detail="Сотрудник не найден")
-    return dict(emp)
+    data = dict(emp)
+    data["bitrix_hash"] = make_bitrix_hash(employee_id)
+    return data
 
 
 # ─── Смены ────────────────────────────────────────────────────────────────────
@@ -570,7 +573,11 @@ def admin_page():
 # ─── Битрикс24 интеграция ────────────────────────────────────────────────────
 
 BITRIX_WEBHOOK  = os.getenv("BITRIX_WEBHOOK",    "https://b24-ku4v54.bitrix24.ru/rest/120298/skj76rcj1h3f3eno")
-BITRIX_MANAGER_ID = os.getenv("BITRIX_MANAGER_ID", "120298")  # ID менеджера в Битрикс24
+BITRIX_MANAGER_ID = os.getenv("BITRIX_MANAGER_ID", "120298")
+BITRIX_SECRET     = os.getenv("BITRIX_SECRET",     "lenta-b24-2026")
+
+def make_bitrix_hash(employee_id: int) -> str:
+    return hashlib.md5(f"{employee_id}_{BITRIX_SECRET}".encode()).hexdigest()
 
 @app.post("/me/notify-manager", summary="Создать лид в Битрикс24")
 async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
