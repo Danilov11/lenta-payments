@@ -570,7 +570,7 @@ def admin_page():
 # ─── Битрикс24 интеграция ────────────────────────────────────────────────────
 
 BITRIX_WEBHOOK  = os.getenv("BITRIX_WEBHOOK",    "https://b24-ku4v54.bitrix24.ru/rest/120298/skj76rcj1h3f3eno")
-BITRIX_CHAT_ID  = os.getenv("BITRIX_CHAT_ID",    "chat2")   # ID чата горячей линии
+BITRIX_CHAT_ID  = os.getenv("BITRIX_CHAT_ID",    "chat417176")  # Открытая линия (Мои Оплаты)
 
 @app.post("/me/notify-manager", summary="Создать лид в Битрикс24")
 async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
