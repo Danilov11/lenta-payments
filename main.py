@@ -591,18 +591,7 @@ async def notify_manager(employee_id: int = Depends(get_current_employee_id)):
 
     full_name = emp["full_name"] or ""
 
-    try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.post(
-                f"{BITRIX_WEBHOOK}/im.notify.personal.add.json",
-                data={
-                    "to":      BITRIX_MANAGER_ID,
-                    "message": f"💬 Сотрудник {full_name} ({emp['phone']}) открыл чат через портал Лента",
-                }
-            )
-        return {"status": "ok", "notify_id": resp.json().get("result")}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
+    return {"status": "ok"}
 
 
 # ─── Здоровье ────────────────────────────────────────────────────────────────
