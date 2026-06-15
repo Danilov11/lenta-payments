@@ -178,6 +178,15 @@
     tr:last-child td { border-bottom: none; }
     .amt { font-weight: 600; color: var(--green); }
     .no-data { text-align: center; padding: 28px 16px; color: var(--gray-2); font-size: 14px; }
+    .faq-list { display: flex; flex-direction: column; gap: 4px; }
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q { width: 100%; background: none; border: none; padding: 12px 0; text-align: left; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .faq-q:hover { color: var(--primary); }
+    .faq-arrow { font-size: 11px; color: var(--gray-2); transition: transform .2s; flex-shrink: 0; }
+    .faq-q.open .faq-arrow { transform: rotate(180deg); }
+    .faq-a { font-size: 13px; color: var(--gray-2); line-height: 1.6; max-height: 0; overflow: hidden; transition: max-height .25s ease, padding .25s; }
+    .faq-a.open { max-height: 200px; padding-bottom: 12px; }
 
     /* ── Spinner ── */
     .spinner {
@@ -360,6 +369,49 @@
         </div>
         <div id="feed-container">
           <div class="no-data" data-i18n="shifts_hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ FAQ ─ -->
+    <div class="section-card" id="faq-card">
+      <div class="card-title">Частые вопросы</div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Когда приходит выплата? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Выплаты производятся ежедневно или еженедельно в зависимости от вашего договора. Обычно средства поступают на карту на следующий рабочий день после закрытия смены.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Почему сумма выплаты меньше ожидаемой? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Сумма выплаты рассчитывается по тарифу за фактически отработанные часы. Из суммы могут вычитаться невозвращённые авансы. Если есть вопросы — напишите менеджеру.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Как оформить аванс? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Для получения аванса обратитесь к менеджеру через кнопку «Написать менеджеру» на этой странице. Аванс выдаётся по согласованию с учётом отработанных смен.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Смена не отображается в истории — что делать? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Данные о сменах обновляются ежедневно. Если смена не появилась в течение 2 рабочих дней — напишите менеджеру с указанием даты и магазина.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Как изменить номер телефона? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Изменение номера телефона производится через менеджера. Самостоятельно изменить номер в системе нельзя из соображений безопасности.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            Как связаться с менеджером? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Нажмите кнопку «Написать менеджеру» в разделе «Личные данные» выше. Менеджер ответит в чате в рабочее время (пн–пт, 9:00–18:00).</div>
         </div>
       </div>
     </div>
@@ -1164,6 +1216,20 @@ document.getElementById('filter-from').value = `${py}-${pm}-01`;
 document.getElementById('filter-to').value   = `${py}-${pm}-${String(lastDayPrev.getDate()).padStart(2,'0')}`;
 
 document.getElementById('btn-load-shifts').addEventListener('click', loadFeed);
+
+function toggleFaq(btn) {
+  const answer = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  // Закрываем все открытые
+  document.querySelectorAll('.faq-q.open').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling.classList.remove('open');
+  });
+  if (!isOpen) {
+    btn.classList.add('open');
+    answer.classList.add('open');
+  }
+}
 
 // ════════════════════════════════════════════════════════
 //  (Отдельная страница сводки удалена — сводка встроена в Профиль)
