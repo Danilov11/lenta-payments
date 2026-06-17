@@ -178,6 +178,10 @@
     tr:last-child td { border-bottom: none; }
     .amt { font-weight: 600; color: var(--green); }
     .no-data { text-align: center; padding: 28px 16px; color: var(--gray-2); font-size: 14px; }
+    .badge-brigadier { display: inline-block; background: #fff3e0; color: #b25b00; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 12px; vertical-align: middle; margin-left: 6px; }
+    .feed-row-fine { background: #fdecea; }
+    .feed-amount-fine { font-size: 16px; font-weight: 700; color: var(--red); }
+    .feed-fine-tag { display: inline-block; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
     .faq-list { display: flex; flex-direction: column; gap: 4px; }
     .faq-item { border-bottom: 1px solid var(--border); }
     .faq-item:last-child { border-bottom: none; }
@@ -186,7 +190,7 @@
     .faq-arrow { font-size: 11px; color: var(--gray-2); transition: transform .2s; flex-shrink: 0; }
     .faq-q.open .faq-arrow { transform: rotate(180deg); }
     .faq-a { font-size: 13px; color: var(--gray-2); line-height: 1.6; max-height: 0; overflow: hidden; transition: max-height .25s ease, padding .25s; }
-    .faq-a.open { max-height: 200px; padding-bottom: 12px; }
+    .faq-a.open { max-height: 280px; padding-bottom: 12px; }
 
     /* ── Spinner ── */
     .spinner {
@@ -391,6 +395,12 @@
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">
+            Что такое аванс? <span class="faq-arrow">▼</span>
+          </button>
+          <div class="faq-a">Аванс — это часть заработка, которую вы можете получить раньше основной выплаты, в счёт уже отработанных смен. Сумма аванса вычитается из ближайшей выплаты. Остаток по непогашенным авансам отображается в карточке «Данные за месяц».</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
             Как оформить аванс? <span class="faq-arrow">▼</span>
           </button>
           <div class="faq-a">Для получения аванса обратитесь к менеджеру через кнопку «Написать менеджеру» на этой странице. Аванс выдаётся по согласованию с учётом отработанных смен.</div>
@@ -457,6 +467,11 @@ const I18N = {
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
     lbl_citizenship:   'Гражданство',
+    lbl_position:      'Должность',
+    lbl_level:         'уровень',
+    lbl_brigadier:     'Бригадир',
+    lbl_fine:          'штраф',
+    unit_hours:        'ч',
     lbl_payment_freq:  'Выплаты',
     btn_manager:       'Написать менеджеру',
     lbl_referrals:     'Программа «Приведи друга»',
@@ -525,6 +540,11 @@ const I18N = {
     feed_empty:        'Барои ин давра маълумот нест',
     lbl_adv_balance:   'Қарзи пешпардохт',
     profile_month:     'Маълумот барои моҳ',
+    lbl_position:      'Вазифа',
+    lbl_level:         'дараҷа',
+    lbl_brigadier:     'Бригадир',
+    lbl_fine:          'ҷарима',
+    unit_hours:        'соат',
     lbl_fio:           'Ном ва насаб',
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
@@ -597,6 +617,11 @@ const I18N = {
     feed_empty:        'Bu davr uchun ma\'lumot yo\'q',
     lbl_adv_balance:   'Avans qarzi',
     profile_month:     'Oylik ma\'lumot',
+    lbl_position:      'Lavozim',
+    lbl_level:         'daraja',
+    lbl_brigadier:     'Brigadir',
+    lbl_fine:          'jarima',
+    unit_hours:        'soat',
     lbl_fio:           'FIO',
     lbl_phone:         'Telefon',
     lbl_inn:           'INN',
@@ -669,6 +694,11 @@ const I18N = {
     feed_empty:        'Бул мезгил үчүн маалымат жок',
     lbl_adv_balance:   'Аванс карызы',
     profile_month:     'Айлык маалымат',
+    lbl_position:      'Кызматы',
+    lbl_level:         'деңгээл',
+    lbl_brigadier:     'Бригадир',
+    lbl_fine:          'айып',
+    unit_hours:        'с',
     lbl_fio:           'АТА (аты-жөнү)',
     lbl_phone:         'Телефон',
     lbl_inn:           'ИНН',
@@ -939,11 +969,21 @@ function renderProfile(emp) {
 
   const freqMap = { ежедневные: t('freq_daily'), еженедельные: t('freq_weekly') };
 
+  const lvlMap = { 1:'I', 2:'II', 3:'III', 4:'IV', 5:'V' };
+  const lvlText = emp.position_level ? ` · ${t('lbl_level')} ${lvlMap[emp.position_level] || emp.position_level}` : '';
+  const brigadierBadge = emp.is_brigadier
+    ? `<span class="badge-brigadier">★ ${t('lbl_brigadier')}</span>` : '';
+
   document.getElementById('profile-grid').innerHTML = `
     <div class="profile-item" style="grid-column:1/-1">
       <label>${t('lbl_fio')}</label>
-      <div class="val" style="font-size:18px;font-weight:700">${emp.full_name || '—'}</div>
+      <div class="val" style="font-size:18px;font-weight:700">${emp.full_name || '—'} ${brigadierBadge}</div>
     </div>
+    ${emp.position ? `
+    <div class="profile-item" style="grid-column:1/-1">
+      <label>${t('lbl_position')}</label>
+      <div class="val">${emp.position}${lvlText}</div>
+    </div>` : ''}
     <div class="profile-item">
       <label>${t('lbl_phone')}</label>
       <div class="val">${emp.phone || '—'}</div>
@@ -1063,6 +1103,7 @@ function renderFeed(shiftsRes, advRes, from, to) {
       store: s['магазин'],
       service: s['услуга'],
       hours: s['часы_оплата'],
+      rate: s['тариф'],
       unplanned: s['тип_смены'] === 'Смена без плана',
       no_status: !s['статус_заказчика'] && !s['статус_исполнителя'],
     });
@@ -1076,7 +1117,7 @@ function renderFeed(shiftsRes, advRes, from, to) {
     if (aTs < fromTs || aTs > toTs) continue;
     events.push({
       date: a['дата'],
-      type: 'advance',
+      type: a['штраф'] ? 'fine' : 'advance',
       amount: a['сумма'],
       balance: a['остаток'],
       period:  a['примечание'] || a['проект'] || '',
@@ -1097,15 +1138,28 @@ function renderFeed(shiftsRes, advRes, from, to) {
   const rows = events.map(ev => {
     const d = formatDate(ev.date);
     if (ev.type === 'payment') {
+      const hr = (ev.hours != null && ev.rate != null)
+        ? `<div class="feed-meta">${fmt(ev.hours)} ${t('unit_hours')} × ${fmt(ev.rate)} ₽</div>` : '';
       return `<div class="feed-row">
         <div class="feed-date">${d}</div>
         <div class="feed-left">
           <div class="feed-amount-pay">+${fmt(ev.amount)} ₽</div>
           <div class="feed-sub">${ev.store || ''}${ev.unplanned ? ` <span class="badge badge-orange" style="font-size:10px;vertical-align:middle">${t('badge_unplanned')}</span>` : ''}</div>
+          ${hr}
         </div>
         <div class="feed-right"></div>
         <div class="feed-period feed-comment-col"></div>
         <div class="feed-comment-col"></div>
+      </div>`;
+    } else if (ev.type === 'fine') {
+      return `<div class="feed-row feed-row-fine">
+        <div class="feed-date">${d}</div>
+        <div class="feed-left"></div>
+        <div class="feed-right">
+          <div class="feed-amount-fine">−${fmt(ev.amount)} ₽ <span class="feed-fine-tag">${t('lbl_fine')}</span></div>
+        </div>
+        <div class="feed-period feed-comment-col">${ev.period}</div>
+        <div class="feed-comment-col" style="font-size:12px;color:var(--text)">${ev.comment}</div>
       </div>`;
     } else if (ev.type === 'pending') {
       return `<div class="feed-row feed-row-pending">

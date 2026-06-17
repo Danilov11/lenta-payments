@@ -228,13 +228,33 @@ def get_my_profile(employee_id: int = Depends(get_current_employee_id)):
     with get_db() as conn:
         emp = fetchone(conn, """
             SELECT employee_id, full_name, phone, inn,
-                   citizenship, employee_type, payment_frequency, supervisor
+                   citizenship, employee_type, payment_frequency, supervisor,
+                   is_brigadier, brigadier_bonus
             FROM employees WHERE employee_id = %s
         """, (employee_id,))
-    if not emp:
-        raise HTTPException(status_code=404, detail="Сотрудник не найден")
+        if not emp:
+            raise HTTPException(status_code=404, detail="Сотрудник не найден")
+        # Должность: самая частая услуга сотрудника + её уровень
+        position = fetchone(conn, """
+            SELECT sv.service_name AS услуга, sv.service_level AS уровень,
+                   COUNT(*) AS cnt
+            FROM shifts s
+            JOIN services sv ON sv.service_id = s.service_id
+            WHERE s.employee_id = %s AND sv.service_name IS NOT NULL
+            GROUP BY sv.service_name, sv.service_level
+            ORDER BY MAX(s.shift_date) DESC, cnt DESC
+            LIMIT 1
+        """, (employee_id,))
     data = dict(emp)
     data["bitrix_hash"] = make_bitrix_hash(employee_id)
+    if position:
+        # Чистим название от префикса уровня "Nур_"
+        name = re.sub(r'^\d+ур_', '', position["услуга"] or '')
+        data["position"]       = name
+        data["position_level"] = position["уровень"]
+    else:
+        data["position"]       = None
+        data["position_level"] = None
     return data
 
 
@@ -269,7 +289,7 @@ def get_my_shifts(
                 s.actual_start  AS начало_факт,
                 s.actual_end    AS конец_факт,
                 s.hours_paid    AS часы_оплата,
-                t.rate          AS тариф,
+                COALESCE(s.rate, t.rate) AS тариф,
                 s.lunch_compensation AS компенсация_обеда,
                 s.total_payment AS выплата,
                 s.note          AS примечание
@@ -403,7 +423,9 @@ def get_my_advances(employee_id: int = Depends(get_current_employee_id)):
                 amount        AS сумма,
                 balance       AS остаток,
                 note          AS примечание,
-                manager_note  AS комментарий_менеджера
+                manager_note  AS комментарий_менеджера,
+                (COALESCE(note,'') ILIKE '%%штраф%%'
+                 OR COALESCE(manager_note,'') ILIKE '%%штраф%%') AS штраф
             FROM advances
             WHERE employee_id = %s
             ORDER BY advance_date DESC
