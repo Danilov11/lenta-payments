@@ -217,6 +217,12 @@
     .ref-badge-paid   { background: #e8f5ed; color: #1a7a3c; }
     .ref-badge-unpaid { background: #fff3e0; color: #e65c00; }
     .ref-badge-other  { background: var(--gray-1); color: var(--gray-3); }
+    .ref-progress { margin-top: 6px; }
+    .ref-progress-bar { height: 7px; background: var(--gray-1); border-radius: 4px; overflow: hidden; }
+    .ref-progress-fill { height: 100%; border-radius: 4px; background: var(--green); transition: width .4s ease; }
+    .ref-progress-fill.done { background: #1a7a3c; }
+    .ref-progress-fill.partial { background: #f0a500; }
+    .ref-progress-text { font-size: 11px; color: var(--gray-3); margin-top: 3px; }
     .adv-total-label { font-size: 13px; color: var(--gray-3); }
     .adv-total-val   { font-size: 20px; font-weight: 700; color: var(--red); }
 
@@ -480,6 +486,7 @@ const I18N = {
     lbl_ref_amount:    'Премия',
     lbl_ref_status:    'Статус',
     lbl_ref_empty:     'Рефералов пока нет',
+    ref_goal_reached:  'Премия начислена',
     lbl_ref_total:     'Всего записей',
     lbl_advances:      'Авансы',
     lbl_adv_date:      'Дата',
@@ -557,6 +564,7 @@ const I18N = {
     lbl_ref_amount:    'Мукофот',
     lbl_ref_status:    'Ҳолат',
     lbl_ref_empty:     'Рефералҳо нестанд',
+    ref_goal_reached:  'Мукофот ҳисоб шуд',
     lbl_ref_total:     'Ҷамъи сабтҳо',
     lbl_advances:      'Пешпардохтҳо',
     lbl_adv_date:      'Сана',
@@ -634,6 +642,7 @@ const I18N = {
     lbl_ref_amount:    'Mukofot',
     lbl_ref_status:    'Holat',
     lbl_ref_empty:     'Referallar yo\'q',
+    ref_goal_reached:  'Mukofot hisoblandi',
     lbl_ref_total:     'Jami yozuvlar',
     lbl_advances:      'Avanslar',
     lbl_adv_date:      'Sana',
@@ -711,6 +720,7 @@ const I18N = {
     lbl_ref_amount:    'Сыйлык',
     lbl_ref_status:    'Статус',
     lbl_ref_empty:     'Реферал жок',
+    ref_goal_reached:  'Сыйакы эсептелди',
     lbl_ref_total:     'Жалпы жазуулар',
     lbl_advances:      'Аванстар',
     lbl_adv_date:      'Күн',
@@ -1210,6 +1220,22 @@ async function loadReferrals() {
   } catch(e) { /* тихо */ }
 }
 
+function refProgress(r) {
+  const goal = r['цель_часов'] || 100;
+  const hrs  = Number(r['часы_реферала']) || 0;
+  const pct  = r['прогресс_процент'] != null ? r['прогресс_процент'] : Math.min(Math.round(hrs/goal*100), 100);
+  const done = r['выполнено'];
+  const cls  = done ? 'done' : (pct > 0 ? 'partial' : '');
+  const label = done
+    ? `✓ ${t('ref_goal_reached')}`
+    : `${fmt(hrs)} / ${goal} ${t('unit_hours')}`;
+  return `
+    <div class="ref-progress">
+      <div class="ref-progress-bar"><div class="ref-progress-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="ref-progress-text">${label}</div>
+    </div>`;
+}
+
 function refStatusBadge(status) {
   if (!status) return `<span class="badge ref-badge-other">—</span>`;
   const s = status.toLowerCase();
@@ -1247,7 +1273,10 @@ function renderReferrals(res) {
       <tbody>
         ${res.referrals.map(r => `
           <tr>
-            <td style="font-size:13px">${r['приведённый'] || '—'}</td>
+            <td style="font-size:13px">
+              ${r['приведённый'] || '—'}
+              ${refProgress(r)}
+            </td>
             <td style="font-size:12px;color:var(--gray-3)">${r['период'] || (r['месяц'] ? r['месяц']+'.'+r['год'] : '—')}</td>
             <td class="amt">${r['сумма_премии'] ? fmt(r['сумма_премии'])+' ₽' : '—'}</td>
             <td>${refStatusBadge(r['статус'])}</td>

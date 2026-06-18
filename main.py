@@ -395,20 +395,38 @@ def get_my_referrals(employee_id: int = Depends(get_current_employee_id)):
     with get_db() as conn:
         rows = fetchall(conn, """
             SELECT
-                project      AS проект,
-                city         AS город,
-                year         AS год,
-                month        AS месяц,
-                period       AS период,
-                referred_name  AS приведённый,
-                referred_phone AS телефон,
-                amount         AS сумма_премии,
-                status         AS статус
-            FROM referrals
-            WHERE referrer_employee_id = %s
-            ORDER BY year DESC, month DESC
+                r.project      AS проект,
+                r.city         AS город,
+                r.year         AS год,
+                r.month        AS месяц,
+                r.period       AS период,
+                r.referred_name  AS приведённый,
+                r.referred_phone AS телефон,
+                r.amount         AS сумма_премии,
+                r.status         AS статус,
+                COALESCE(SUM(s.hours_paid), 0) AS часы_реферала
+            FROM referrals r
+            LEFT JOIN employees e
+                   ON regexp_replace(e.phone, '\\D', '', 'g')
+                    = regexp_replace(r.referred_phone, '\\D', '', 'g')
+            LEFT JOIN shifts s ON s.employee_id = e.employee_id
+            WHERE r.referrer_employee_id = %s
+            GROUP BY r.referral_id
+            ORDER BY r.year DESC, r.month DESC
         """, (employee_id,))
-    return {"total": len(rows), "referrals": [dict(r) for r in rows]}
+    HOURS_GOAL = 100
+    result = []
+    for r in rows:
+        d = dict(r)
+        hrs = float(d.pop("часы_реферала") or 0)
+        paid = (d.get("статус") or "").lower().find("оплач") >= 0
+        d["часы_реферала"]    = round(hrs, 1)
+        d["цель_часов"]       = HOURS_GOAL
+        # Если премия уже выплачена — цель достигнута (100%)
+        d["прогресс_процент"] = 100 if paid else min(round(hrs / HOURS_GOAL * 100), 100)
+        d["выполнено"]        = paid or hrs >= HOURS_GOAL
+        result.append(d)
+    return {"total": len(result), "referrals": result, "hours_goal": HOURS_GOAL}
 
 
 # ─── Авансы ──────────────────────────────────────────────────────────────────
