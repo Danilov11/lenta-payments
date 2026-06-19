@@ -122,6 +122,13 @@ def init_db():
     CREATE INDEX IF NOT EXISTS idx_shifts_employee_date ON shifts(employee_id, shift_date);
     CREATE INDEX IF NOT EXISTS idx_employees_phone ON employees(phone);
 
+    -- Миграции (колонки, добавленные после первого релиза; идемпотентны)
+    ALTER TABLE employees ADD COLUMN IF NOT EXISTS notifications_seen_at TIMESTAMP;
+    ALTER TABLE employees ADD COLUMN IF NOT EXISTS is_brigadier    BOOLEAN DEFAULT FALSE;
+    ALTER TABLE employees ADD COLUMN IF NOT EXISTS brigadier_bonus NUMERIC;
+    ALTER TABLE advances  ADD COLUMN IF NOT EXISTS manager_note    TEXT;
+    ALTER TABLE shifts    ADD COLUMN IF NOT EXISTS rate            NUMERIC;
+
     -- Тестовый пользователь (для демо)
     INSERT INTO employees (full_name, phone, employee_type)
     VALUES ('Тестовый пользователь', '79059057757', 'физ_лицо')
