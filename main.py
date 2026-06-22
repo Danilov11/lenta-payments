@@ -612,6 +612,79 @@ def admin_create_advance(body: AdvanceCreateRequest, request: Request):
               body.note, body.manager_note, body.project))
     return {"advance_id": row["advance_id"]}
 
+@app.post("/admin/sync/referrals", include_in_schema=False)
+def sync_referrals_from_sheet(payload: dict, request: Request):
+    """Принимает рефералов «Приведи друга» из Google Apps Script.
+
+    Полностью перезаписывает рефералов источника «АПД» (project='АПД'),
+    исторические рефералы других проектов не трогает.
+
+    Ожидаемый формат каждой строки:
+        {"referrer_name": "...", "referred_name": "...",
+         "referred_phone": "79...", "amount": 10000}
+
+    Реферрер сопоставляется по ФИО (первые 2 слова), приведённый — по телефону
+    (для расчёта прогресса по часам в /me/referrals).
+    """
+    verify_admin(request)
+    records = payload.get("referrals", [])
+
+    def norm_phone(p):
+        if not p:
+            return None
+        d = re.sub(r"\D", "", str(p))
+        if len(d) == 11 and d.startswith("8"):
+            d = "7" + d[1:]
+        return d if len(d) >= 10 else None
+
+    def find_referrer(conn, name):
+        """Ищет реферрера-сотрудника по ФИО (первые 2 слова, без регистра)."""
+        if not name:
+            return None
+        parts = re.sub(r"\s+", " ", name.strip()).split(" ")
+        if len(parts) >= 2 and len(parts[0]) >= 3:
+            key = f"{parts[0]} {parts[1]}%"
+            rows = fetchall(conn,
+                "SELECT employee_id FROM employees WHERE full_name ILIKE %s LIMIT 2",
+                (key,))
+            if len(rows) == 1:
+                return rows[0]["employee_id"]
+        return None
+
+    inserted = 0
+    skipped  = 0
+    linked_referrer = 0
+
+    with get_db() as conn:
+        execute(conn, "DELETE FROM referrals WHERE project = 'АПД'")
+        for rec in records:
+            phone = norm_phone(rec.get("referred_phone"))
+            referred_name = (rec.get("referred_name") or "").strip() or None
+            if not referred_name and not phone:
+                skipped += 1
+                continue
+            try:
+                amount = float(rec.get("amount") or 0)
+            except Exception:
+                amount = 0.0
+
+            referrer_name = (rec.get("referrer_name") or "").strip() or None
+            referrer_id   = find_referrer(conn, referrer_name)
+            if referrer_id:
+                linked_referrer += 1
+
+            execute(conn, """
+                INSERT INTO referrals
+                    (project, referred_name, referred_phone,
+                     referrer_name, referrer_employee_id, amount, status)
+                VALUES ('АПД', %s, %s, %s, %s, %s, 'В работе')
+            """, (referred_name, phone, referrer_name, referrer_id, amount))
+            inserted += 1
+
+    return {"status": "ok", "inserted": inserted, "skipped": skipped,
+            "linked_referrer": linked_referrer, "total": len(records)}
+
+
 @app.get("/admin", include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(STATIC_DIR, "admin.html"))

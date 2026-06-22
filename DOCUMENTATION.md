@@ -136,6 +136,7 @@ lenta_api/
 | POST | `/admin/advance` | Создать аванс вручную |
 | PATCH | `/admin/advance/{id}` | Изменить комментарий менеджера к авансу |
 | POST | `/admin/sync/advances` | Полная перезапись авансов (приёмник Apps Script) |
+| POST | `/admin/sync/referrals` | Перезапись рефералов АПД, `project='АПД'` (приёмник Apps Script) |
 | GET | `/admin` | HTML-страница панели менеджера |
 
 ### Аутентификация
@@ -181,6 +182,14 @@ lenta_api/
 | `etl_shifts.py` | Google Sheets (смены) | `shifts` | GitHub Actions (ежедневно) / вручную |
 | `etl_referrals.py` | Google Sheets («Приведи друга») | `referrals` | GitHub Actions (ежедневно) / вручную |
 | `etl_advances.py` | `Авансы.xlsx` | `advances` | Вручную (или Apps Script → `/admin/sync/advances`) |
+| `apps_script_referrals.gs` | Google Sheets (АПД) | `referrals` (`project='АПД'`) | Apps Script → `/admin/sync/referrals` |
+
+**АПД «Приведи друга» (Apps Script).** Лист с колонками: `ФИО рекрутера` (A),
+`ФИО кого привёл` (B), `Телефон кто пришёл` (C), `Сумма` (D). Скрипт
+`apps_script_referrals.gs` шлёт строки на `/admin/sync/referrals`. Реферрер
+сопоставляется с сотрудником **по ФИО** (первые 2 слова), приведённый — **по
+телефону** (по нему `/me/referrals` считает прогресс к 100 ч). Реферрер видит
+рефералов только если он есть в `employees` (офисные рекрутёры в портал не входят).
 
 - **Смены и рефералы** берутся из публичных Google Sheets (CSV-экспорт) — доступ к
   редактированию не нужен. Расписание: `etl_cron.yml`, **02:00 UTC = 05:00 МСК**.
