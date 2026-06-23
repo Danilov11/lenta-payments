@@ -397,19 +397,19 @@
           <button class="faq-q" onclick="toggleFaq(this)">
             Почему сумма выплаты меньше ожидаемой? <span class="faq-arrow">▼</span>
           </button>
-          <div class="faq-a">Сумма выплаты рассчитывается по тарифу за фактически отработанные часы. Из суммы могут вычитаться невозвращённые авансы. Если есть вопросы — напишите менеджеру.</div>
+          <div class="faq-a">Сумма выплаты рассчитывается по тарифу за фактически отработанные часы. Из неё вычитается уже полученная за этот период ежедневная оплата. Если есть вопросы — напишите менеджеру.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">
-            Что такое аванс? <span class="faq-arrow">▼</span>
+            Что такое ежедневная оплата? <span class="faq-arrow">▼</span>
           </button>
-          <div class="faq-a">Аванс — это часть заработка, которую вы можете получить раньше основной выплаты, в счёт уже отработанных смен. Сумма аванса вычитается из ближайшей выплаты. Остаток по непогашенным авансам отображается в карточке «Данные за месяц».</div>
+          <div class="faq-a">Ежедневная оплата — это деньги, которые вы получаете за уже отработанные смены, не дожидаясь основной выплаты. В колонке «Ежедневная оплата» отображаются полученные суммы, а в карточке «Данные за месяц» — остаток (сколько ещё будет учтено в основной выплате).</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">
-            Как оформить аванс? <span class="faq-arrow">▼</span>
+            Как получить ежедневную оплату? <span class="faq-arrow">▼</span>
           </button>
-          <div class="faq-a">Для получения аванса обратитесь к менеджеру через кнопку «Написать менеджеру» на этой странице. Аванс выдаётся по согласованию с учётом отработанных смен.</div>
+          <div class="faq-a">По вопросам ежедневной оплаты обратитесь к менеджеру через кнопку «Написать менеджеру» на этой странице. Оплата начисляется с учётом отработанных смен.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">
@@ -457,17 +457,17 @@ const I18N = {
     tab_shifts:        'История',
     tab_summary:       'АПД 🤝',
     profile_title:     'Личные данные',
-    shifts_title:      'Выплаты и авансы',
+    shifts_title:      'Выплаты и ежедневная оплата',
     summary_title:     'Акция «Приведи друга»',
     btn_show:          'Показать',
     shifts_hint:       'Выберите период и нажмите «Показать»',
     summary_hint:      'Выберите месяц и нажмите «Показать»',
-    feed_payment:      'Поступило оплатой',
-    feed_advance:      'Поступило авансом',
+    feed_payment:      'Оплата за смену',
+    feed_advance:      'Ежедневная оплата',
     feed_period:       'Период',
     feed_comment:      'Комментарий',
     feed_empty:        'Нет данных за этот период',
-    lbl_adv_balance:   'Долг по авансам',
+    lbl_adv_balance:   'Остаток ежедневной оплаты',
     profile_month:     'Данные за месяц',
     lbl_fio:           'ФИО',
     lbl_phone:         'Телефон',
@@ -535,17 +535,17 @@ const I18N = {
     tab_shifts:        'Таърих',
     tab_summary:       'АПД 🤝',
     profile_title:     'Маълумоти шахсӣ',
-    shifts_title:      'Пардохтҳо ва пешпардохтҳо',
+    shifts_title:      'Пардохтҳо ва пардохти ҳаррӯза',
     summary_title:     'Барнома «Дӯст биёр»',
     btn_show:          'Нишон додан',
     shifts_hint:       'Давраро интихоб кунед ва «Нишон додан»-ро пахш кунед',
     summary_hint:      'Моҳро интихоб кунед ва «Нишон додан»-ро пахш кунед',
-    feed_payment:      'Пардохт расид',
-    feed_advance:      'Пешпардохт расид',
+    feed_payment:      'Пардохт барои навбат',
+    feed_advance:      'Пардохти ҳаррӯза',
     feed_period:       'Давра',
     feed_comment:      'Шарҳ',
     feed_empty:        'Барои ин давра маълумот нест',
-    lbl_adv_balance:   'Қарзи пешпардохт',
+    lbl_adv_balance:   'Бақияи пардохти ҳаррӯза',
     profile_month:     'Маълумот барои моҳ',
     lbl_position:      'Вазифа',
     lbl_level:         'дараҷа',
@@ -613,17 +613,17 @@ const I18N = {
     tab_shifts:        'Tarix',
     tab_summary:       'APD 🤝',
     profile_title:     'Shaxsiy ma\'lumotlar',
-    shifts_title:      'To\'lovlar va avanslar',
+    shifts_title:      'To\'lovlar va kunlik to\'lov',
     summary_title:     '«Do\'st olib kel» dasturi',
     btn_show:          'Ko\'rsatish',
     shifts_hint:       'Davrni tanlang va «Ko\'rsatish»ni bosing',
     summary_hint:      'Oyni tanlang va «Ko\'rsatish»ni bosing',
-    feed_payment:      'To\'lov tushdi',
-    feed_advance:      'Avans tushdi',
+    feed_payment:      'Smena uchun to\'lov',
+    feed_advance:      'Kunlik to\'lov',
     feed_period:       'Davr',
     feed_comment:      'Izoh',
     feed_empty:        'Bu davr uchun ma\'lumot yo\'q',
-    lbl_adv_balance:   'Avans qarzi',
+    lbl_adv_balance:   'Kunlik to\'lov qoldig\'i',
     profile_month:     'Oylik ma\'lumot',
     lbl_position:      'Lavozim',
     lbl_level:         'daraja',
@@ -691,17 +691,17 @@ const I18N = {
     tab_shifts:        'Тарых',
     tab_summary:       'АПД 🤝',
     profile_title:     'Жеке маалымат',
-    shifts_title:      'Төлөмдөр жана аванстар',
+    shifts_title:      'Төлөмдөр жана күнүмдүк төлөм',
     summary_title:     '«Дос алып кел» программасы',
     btn_show:          'Көрсөтүү',
     shifts_hint:       'Мезгилди тандап, «Көрсөтүү»нү басыңыз',
     summary_hint:      'Айды тандап, «Көрсөтүү»нү басыңыз',
-    feed_payment:      'Төлөм келди',
-    feed_advance:      'Аванс келди',
+    feed_payment:      'Смена үчүн төлөм',
+    feed_advance:      'Күнүмдүк төлөм',
     feed_period:       'Мезгил',
     feed_comment:      'Комментарий',
     feed_empty:        'Бул мезгил үчүн маалымат жок',
-    lbl_adv_balance:   'Аванс карызы',
+    lbl_adv_balance:   'Күнүмдүк төлөмдүн калдыгы',
     profile_month:     'Айлык маалымат',
     lbl_position:      'Кызматы',
     lbl_level:         'деңгээл',
@@ -961,9 +961,9 @@ function renderProfileSummary(res, advRes) {
       </div>
     </div>
     ${bal > 0 ? `
-    <div style="background:#fff3e0;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-      <span style="font-size:13px;color:#7a3600">${t('lbl_adv_balance')}</span>
-      <span style="font-weight:700;color:var(--red)">${fmt(bal)} ₽</span>
+    <div style="background:var(--gray-0);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:13px;color:var(--gray-3)">${t('lbl_adv_balance')}</span>
+      <span style="font-weight:700;color:var(--text)">${fmt(bal)} ₽</span>
     </div>` : ''}`;
 }
 
@@ -1138,8 +1138,14 @@ function renderFeed(shiftsRes, advRes, from, to) {
   // Сортировка по убыванию даты
   events.sort((a, b) => b.date.localeCompare(a.date));
 
-  const hasUnreg = shiftsRes?.shifts?.some(s => !s['статус_заказчика'] && !s['статус_исполнителя']);
-  const warn = hasUnreg ? `<div class="warn-banner">⚠️ ${t('warn_no_shift')}</div>` : '';
+  const unregDates = [...new Set(
+    (shiftsRes?.shifts || [])
+      .filter(s => !s['статус_заказчика'] && !s['статус_исполнителя'])
+      .map(s => formatDate(s['shift_date']))
+  )];
+  const warn = unregDates.length
+    ? `<div class="warn-banner">⚠️ <b>${unregDates.join(', ')}</b> — ${t('warn_no_shift')}</div>`
+    : '';
 
   if (!events.length) {
     cont.innerHTML = warn + `<div class="no-data">${t('feed_empty')}</div>`; return;
@@ -1188,7 +1194,7 @@ function renderFeed(shiftsRes, advRes, from, to) {
         <div class="feed-left"></div>
         <div class="feed-right">
           <div class="feed-amount-adv">${fmt(ev.amount)} ₽</div>
-          ${Number(ev.balance) > 0 ? `<div class="feed-sub" style="color:var(--red)">ост. ${fmt(ev.balance)} ₽</div>` : ''}
+          ${Number(ev.balance) > 0 ? `<div class="feed-sub" style="color:var(--gray-3)">ост. ${fmt(ev.balance)} ₽</div>` : ''}
         </div>
         <div class="feed-period feed-comment-col">${ev.period}</div>
         <div class="feed-comment-col" style="font-size:12px;color:var(--text)">${ev.comment}</div>
