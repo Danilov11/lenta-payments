@@ -918,8 +918,6 @@ async function loadProfile() {
 
 function getPrevMonth() {
   const d = new Date();
-  d.setDate(1);
-  d.setMonth(d.getMonth() - 1);
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 }
 
@@ -1034,7 +1032,11 @@ function setBitrixUser(emp) { /* данные теперь передаются 
 var BITRIX_MSK = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js';
 var BITRIX_NSK = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_8_1xn7x5.js';
 
-var _bitrixLoaded = false;
+// Москва → loader_6_g0h8bo, Новосибирск → loader_8_1xn7x5
+var BITRIX_MSK = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js';
+var BITRIX_NSK = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_8_1xn7x5.js';
+
+var _bitrixLoadedSrc = null; // какой именно виджет загружен
 
 function _getBitrixLoader() {
   var city = ((window._profileCache && window._profileCache.city) || '').toLowerCase();
@@ -1043,6 +1045,8 @@ function _getBitrixLoader() {
 
 function openBitrix() {
   api('POST', '/me/notify-manager').catch(() => {});
+
+  var loaderSrc = _getBitrixLoader();
 
   var doOpen = function() {
     if (window.BX && window.BX.SiteButton) {
@@ -1053,16 +1057,16 @@ function openBitrix() {
     }
   };
 
-  if (_bitrixLoaded) {
+  if (_bitrixLoadedSrc === loaderSrc) {
     doOpen();
     return;
   }
 
-  // Первое нажатие — загружаем виджет нужного города
-  _bitrixLoaded = true;
+  // Загружаем виджет нужного города (или перезагружаем при смене аккаунта)
+  _bitrixLoadedSrc = loaderSrc;
   var s = document.createElement('script');
   s.async = true;
-  s.src = _getBitrixLoader() + '?' + (Date.now()/60000|0);
+  s.src = loaderSrc + '?' + (Date.now()/60000|0);
   s.onload = function() {
     var attempts = 0;
     var poll = setInterval(function() {
@@ -1300,14 +1304,12 @@ function renderReferrals(res) {
 // ════════════════════════════════════════════════════════
 //  СМЕНЫ
 // ════════════════════════════════════════════════════════
-// Устанавливаем диапазон по умолчанию — прошлый месяц
+// Устанавливаем диапазон по умолчанию — текущий месяц
 const now = new Date();
 const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
-const prevM = new Date(now.getFullYear(), now.getMonth()-1, 1);
-const py = prevM.getFullYear(), pm = String(prevM.getMonth()+1).padStart(2,'0');
-const lastDayPrev = new Date(now.getFullYear(), now.getMonth(), 0);
-document.getElementById('filter-from').value = `${py}-${pm}-01`;
-document.getElementById('filter-to').value   = `${py}-${pm}-${String(lastDayPrev.getDate()).padStart(2,'0')}`;
+const lastDayCur = new Date(now.getFullYear(), now.getMonth()+1, 0);
+document.getElementById('filter-from').value = `${y}-${m}-01`;
+document.getElementById('filter-to').value   = `${y}-${m}-${String(lastDayCur.getDate()).padStart(2,'0')}`;
 
 document.getElementById('btn-load-shifts').addEventListener('click', loadFeed);
 
