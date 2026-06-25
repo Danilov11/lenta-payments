@@ -1030,15 +1030,21 @@ window.addEventListener('onBitrixLiveChat', function(event) {
 
 function setBitrixUser(emp) { /* данные теперь передаются через onBitrixLiveChat */ }
 
+// Москва → loader_6_g0h8bo, Новосибирск → loader_8_1xn7x5
+var BITRIX_MSK = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js';
+var BITRIX_NSK = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_8_1xn7x5.js';
+
 var _bitrixLoaded = false;
+
+function _getBitrixLoader() {
+  var city = ((window._profileCache && window._profileCache.city) || '').toLowerCase();
+  return city.indexOf('новосибирск') !== -1 ? BITRIX_NSK : BITRIX_MSK;
+}
 
 function openBitrix() {
   api('POST', '/me/notify-manager').catch(() => {});
 
-  var emp = window._profileCache;
-
   var doOpen = function() {
-    // Передаём данные — сначала setUserData, потом открываем с задержкой
     if (window.BX && window.BX.SiteButton) {
       setTimeout(function() {
         try { BX.SiteButton.btnClick(); } catch(e) {}
@@ -1052,13 +1058,12 @@ function openBitrix() {
     return;
   }
 
-  // Первое нажатие — загружаем виджет
+  // Первое нажатие — загружаем виджет нужного города
   _bitrixLoaded = true;
   var s = document.createElement('script');
   s.async = true;
-  s.src = 'https://cdn-ru.bitrix24.ru/b30585592/crm/site_button/loader_6_g0h8bo.js?' + (Date.now()/60000|0);
+  s.src = _getBitrixLoader() + '?' + (Date.now()/60000|0);
   s.onload = function() {
-    // Polling до готовности BX.SiteButton
     var attempts = 0;
     var poll = setInterval(function() {
       if (window.BX && window.BX.SiteButton || attempts++ > 30) {

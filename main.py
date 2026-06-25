@@ -252,7 +252,17 @@ def get_my_profile(employee_id: int = Depends(get_current_employee_id)):
             ORDER BY MAX(s.shift_date) DESC, cnt DESC
             LIMIT 1
         """, (employee_id,))
+        city_row = fetchone(conn, """
+            SELECT c.city_name
+            FROM shifts s
+            JOIN stores st ON st.store_id = s.store_id
+            JOIN cities c  ON c.city_id   = st.city_id
+            WHERE s.employee_id = %s AND c.city_name IS NOT NULL
+            ORDER BY s.shift_date DESC
+            LIMIT 1
+        """, (employee_id,))
     data = dict(emp)
+    data["city"] = city_row["city_name"] if city_row else None
     data["bitrix_hash"] = make_bitrix_hash(employee_id)
     if position:
         # Чистим название от префикса уровня "Nур_"
